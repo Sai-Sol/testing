@@ -33,22 +33,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Clock, Terminal, Bot } from "lucide-react";
+import { Loader2, Clock, Terminal } from "lucide-react";
+import { Input } from "@/components/ui/input";
+
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
 
 const formSchema = z.object({
-  provider: z.string({ required_error: "Please select a quantum provider." }),
-  inputType: z.enum(["qasm", "prompt"]),
-  inputValue: z.string().min(1, { message: "Input cannot be empty." }),
+  jobType: z.string().min(1, { message: "Job type cannot be empty." }),
+  description: z.string().min(1, { message: "Description cannot be empty." }),
 });
 
 const computerTimeFactors: Record<string, { base: number; factor: number }> = {
-  "IBM Quantum": { base: 5, factor: 0.05 },
-  "Google Quantum AI": { base: 10, factor: 0.1 },
-  "Amazon Braket": { base: 8, factor: 0.08 },
+  "Shor's Algorithm": { base: 25, factor: 0.15 },
+  "Grover's Algorithm": { base: 15, factor: 0.1 },
+  "Quantum Simulation": { base: 20, factor: 0.2 },
+  "Custom": { base: 5, factor: 0.05 },
 };
 
 interface JobSubmissionFormProps {
@@ -63,22 +64,21 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      provider: undefined,
-      inputType: "qasm",
-      inputValue: "",
+      jobType: undefined,
+      description: "",
     },
   });
 
-  const selectedProvider = form.watch("provider");
-  const inputValue = form.watch("inputValue");
+  const selectedJobType = form.watch("jobType");
+  const descriptionValue = form.watch("description");
 
   const estimatedTime = useMemo(() => {
-    if (!selectedProvider || !inputValue) return null;
-    const { base, factor } = computerTimeFactors[selectedProvider];
-    const length = inputValue.length;
+    if (!selectedJobType || !descriptionValue) return null;
+    const { base, factor } = computerTimeFactors[selectedJobType] || computerTimeFactors["Custom"];
+    const length = descriptionValue.length;
     const time = base + length * factor;
-    return `${Math.round(time)} - ${Math.round(time * 1.5)} minutes`;
-  }, [selectedProvider, inputValue]);
+    return `${Math.round(time)} - ${Math.round(time * 1.5)} seconds`;
+  }, [selectedJobType, descriptionValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!signer) {
@@ -92,8 +92,6 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
 
     setIsLoading(true);
     try {
-      const jobTypeString = `${values.provider} (${values.inputType}): ${values.inputValue.substring(0, 50)}${values.inputValue.length > 50 ? '...' : ''}`;
-      
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
       toast({
@@ -101,7 +99,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
         description: "Please confirm the transaction in your wallet.",
       });
 
-      const tx = await contract.logJob(jobTypeString);
+      const tx = await contract.logJob(values.jobType, values.description);
       
       await tx.wait();
 
@@ -122,8 +120,8 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
         });
 
       form.reset({
-        ...values,
-        inputValue: "",
+        jobType: values.jobType,
+        description: "",
       });
       onJobLogged();
       
@@ -139,39 +137,38 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
       setIsLoading(false);
     }
   }
-  
-  const handleTabChange = (value: string) => {
-    form.setValue("inputType", value as "qasm" | "prompt");
-    form.setValue("inputValue", "");
-  };
 
   return (
     <Card className="shadow-lg border-primary/20">
        <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Log a New Job</CardTitle>
+            <CardTitle className="font-headline text-2xl flex items-center gap-2">
+              <Terminal className="h-6 w-6" />
+              Log a New Job
+            </CardTitle>
             <CardDescription>
-              Select a provider and submit your QASM code or prompt.
+              Submit your quantum job to the blockchain.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
               <FormField
                 control={form.control}
-                name="provider"
+                name="jobType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantum Provider</FormLabel>
+                    <FormLabel>Job Type</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a quantum computer" />
+                          <SelectValue placeholder="Select a job type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="IBM Quantum">IBM Quantum</SelectItem>
-                        <SelectItem value="Google Quantum AI">Google Quantum AI</SelectItem>
-                        <SelectItem value="Amazon Braket">Amazon Braket</SelectItem>
+                        <SelectItem value="Shor's Algorithm">Shor&apos;s Algorithm</SelectItem>
+                        <SelectItem value="Grover's Algorithm">Grover&apos;s Algorithm</SelectItem>
+                        <SelectItem value="Quantum Simulation">Quantum Simulation</SelectItem>
+                        <SelectItem value="Custom">Custom</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -179,38 +176,24 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
                 )}
               />
 
-              <Tabs defaultValue="qasm" className="w-full" onValueChange={handleTabChange}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="qasm"><Terminal className="mr-2 h-4 w-4" /> QASM Code</TabsTrigger>
-                  <TabsTrigger value="prompt"><Bot className="mr-2 h-4 w-4" /> Prompt</TabsTrigger>
-                </TabsList>
-                <FormField
-                  control={form.control}
-                  name="inputValue"
-                  render={({ field }) => (
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
                   <FormItem>
-                    <TabsContent value="qasm" className="mt-4">
-                        <FormLabel>QASM Input</FormLabel>
-                        <FormControl>
-                           <Textarea placeholder={'// QASM 2.0; \nOPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;'} className="mt-2 font-mono" rows={6} {...field} />
-                        </FormControl>
-                    </TabsContent>
-                    <TabsContent value="prompt" className="mt-4">
-                        <FormLabel>Prompt Input</FormLabel>
-                        <FormControl>
-                           <Textarea placeholder="Describe the quantum job you want to run..." className="mt-2" rows={6} {...field} />
-                        </FormControl>
-                    </TabsContent>
+                    <FormLabel>Description / Input Data</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter prime factors, simulation parameters, etc." className="font-mono" rows={4} {...field} />
+                    </FormControl>
                     <FormMessage />
-                   </FormItem>
-                  )}
-                />
-              </Tabs>
+                  </FormItem>
+                )}
+              />
 
               {estimatedTime && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
                   <Clock className="h-4 w-4" />
-                  <span>Estimated Compute Time: {estimatedTime}</span>
+                  <span>Estimated Simulation Time: {estimatedTime}</span>
                 </div>
               )}
           </CardContent>

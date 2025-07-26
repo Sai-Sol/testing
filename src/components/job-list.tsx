@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Contract, EventLog } from "ethers";
+import { Contract } from "ethers";
 import { formatDistanceToNow } from "date-fns";
 import { useWallet } from "@/hooks/use-wallet";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
   CardContent,
@@ -21,9 +22,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, Clipboard, Check, HardDrive } from "lucide-react";
+import { ExternalLink, Clipboard, Check, HardDrive, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
@@ -31,8 +32,9 @@ import { quantumJobLoggerABI } from "@/lib/contracts";
 type Job = {
   user: string;
   jobType: string;
-  timestamp: string;
-  txHash: string;
+  ipfsHash: string;
+  timeSubmitted: string;
+  txHash?: string; // Optional, as it's not in the struct
 };
 
 interface JobListProps {
@@ -41,15 +43,14 @@ interface JobListProps {
   onTotalJobsChange: (count: number) => void;
 }
 
-const MAX_BLOCK_RANGE = 100000;
-
 export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }: JobListProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState("");
+  const [filterByUser, setFilterByUser] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const { provider, isConnected } = useWallet();
+  const { user } = useAuth();
 
   const fetchJobs = useCallback(async () => {
     if (!provider) {
@@ -65,28 +66,20 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
 
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, provider);
-      const eventFilter = contract.filters.JobLogged();
-      
-      const latestBlock = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, latestBlock - MAX_BLOCK_RANGE);
+      const fetchedJobs = await contract.getAllJobs();
 
-      const logs = await contract.queryFilter(eventFilter, fromBlock, latestBlock);
-
-      const parsedJobs: Job[] = logs.map(log => {
-        const event = log as EventLog;
-        return {
-          user: event.args.user,
-          jobType: event.args.jobType,
-          timestamp: new Date(Number(event.args.timestamp) * 1000).toISOString(),
-          txHash: event.transactionHash,
-        };
-      }).reverse();
+      const parsedJobs: Job[] = fetchedJobs.map((job: any) => ({
+        user: job.user,
+        jobType: job.jobType,
+        ipfsHash: job.ipfsHash,
+        timeSubmitted: new Date(Number(job.timeSubmitted) * 1000).toISOString(),
+      })).reverse();
       
       setJobs(parsedJobs);
       onTotalJobsChange(parsedJobs.length);
     } catch (e: any) {
       console.error("Failed to fetch jobs:", e);
-      setError("Failed to fetch jobs from the blockchain. Please ensure you are on the correct network.");
+      setError("Failed to fetch jobs from the blockchain. Please ensure you are on the correct network and refresh.");
       setJobs([]);
       onTotalJobsChange(0);
     } finally {
@@ -99,9 +92,22 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
   }, [fetchJobs, jobsLastUpdated]);
 
   const filteredJobs = useMemo(() => {
-    if (!filter) return jobs;
-    return jobs.filter(job => job.user.toLowerCase().includes(filter.toLowerCase()));
-  }, [jobs, filter]);
+    if (userRole === "admin" && filterByUser && user?.email) {
+      const currentUserAddress = jobs.find(job => job.user.toLowerCase() === user.email.toLowerCase())?.user;
+       if(user.email === 'p1@example.com' && provider) {
+         return jobs.filter(job => job.user.toLowerCase() === signer?.address.toLowerCase());
+       }
+      return jobs.filter(job => job.user.toLowerCase() === user.email.toLowerCase());
+    }
+    if (userRole === "user" && user) {
+        if(provider && (window as any).ethereum?.selectedAddress) {
+            return jobs.filter(job => job.user.toLowerCase() === (window as any).ethereum.selectedAddress.toLowerCase());
+        }
+    }
+    return jobs;
+  }, [jobs, filterByUser, userRole, user, provider]);
+  
+  const {signer} = useWallet()
 
   const copyToClipboard = (text: string, identifier: string) => {
     navigator.clipboard.writeText(text);
@@ -134,12 +140,13 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
                 </CardDescription>
             </div>
             {userRole === "admin" && (
-                <Input
-                placeholder="Filter by user address..."
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="max-w-xs"
-                />
+              <Button
+                variant={filterByUser ? "secondary" : "outline"}
+                onClick={() => setFilterByUser(prev => !prev)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                {filterByUser ? "Show All Jobs" : "Show My Jobs Only"}
+              </Button>
             )}
         </div>
       </CardHeader>
@@ -155,7 +162,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
           <div className="text-center text-muted-foreground py-12">
             <HardDrive className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="mt-4 text-lg font-medium">No Jobs Found</p>
-            <p className="text-sm">Once jobs are logged, they will appear here.</p>
+            <p className="text-sm">{userRole === 'user' ? "Your submitted jobs will appear here." : "No jobs have been logged to the contract yet."}</p>
           </div>
         ) : (
           <Table>
@@ -163,37 +170,29 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Job Type</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Timestamp</TableHead>
-                <TableHead className="text-right">Transaction</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredJobs.map((job) => (
-                <TableRow key={job.txHash}>
+              {filteredJobs.map((job, index) => (
+                <TableRow key={`${job.user}-${job.timeSubmitted}-${index}`}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm">{`${job.user.slice(0, 6)}...${job.user.slice(-4)}`}</span>
-                      <button onClick={() => copyToClipboard(job.user, `user-${job.txHash}`)} className="text-muted-foreground hover:text-foreground">
-                        {copied === `user-${job.txHash}` ? <Check size={14} className="text-primary" /> : <Clipboard size={14} />}
+                      <button onClick={() => copyToClipboard(job.user, `user-${index}`)} className="text-muted-foreground hover:text-foreground">
+                        {copied === `user-${index}` ? <Check size={14} className="text-primary" /> : <Clipboard size={14} />}
                       </button>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{job.jobType}</Badge>
                   </TableCell>
-                  <TableCell>
-                    {formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}
+                  <TableCell className="max-w-xs truncate">
+                    {job.ipfsHash}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <a
-                      href={`https://www.megaexplorer.xyz/tx/${job.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-primary hover:underline"
-                    >
-                      <ExternalLink size={14} />
-                      View
-                    </a>
+                  <TableCell>
+                    {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,6 +1,6 @@
 export const HARDCODED_USERS = [
-  { email: "admin@example.com", password: "password", role: "admin" },
-  { email: "user@example.com", password: "password", role: "user" },
+  { email: "admin@example.com", password: "456", role: "admin" },
+  { email: "p1@example.com", password: "123", role: "user" },
 ];
 
 export const CONTRACT_ADDRESS = "0xd1471126F18d76be253625CcA75e16a0F1C5B3e2";

@@ -29,7 +29,7 @@ import { Loader2, Atom } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string().min(3, { message: "Password must be at least 3 characters." }),
 });
 
 export default function LoginPage() {
@@ -94,7 +94,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin@example.com" {...field} />
+                      <Input placeholder="admin@example.com or p1@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
