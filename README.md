@@ -1,1 +1,4 @@
-This is a project where we implem
+This is a project where we implemented a blockchain as logging system and which can help in protecting the data stored and transmitted from and to the system. We are using MegaETH Testnet as our blockchain.The Current Transcations per second(TPS) is around 350-400 txns/ms.Its pretty much faster and cheaper than Ethereum(ETH).We are waiting for the mainnet launch where the TPS will be around 100000 which makes the our platform to be very fast,secure and transparent to the users.We are an aggregator where the top 3 quantum computing platforms can be used from a single platform.We are testing the blockchain's adaptability to quantum Computing jobs.The system is highly secure,Immuntable and Transparent to the users and The quantum Computing platforms that we are using are:
+Google Cirq
+IBM Quantum
+Amazon Braket.
