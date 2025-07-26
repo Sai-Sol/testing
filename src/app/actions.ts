@@ -13,10 +13,9 @@ export async function logJob(jobType: string): Promise<{ success: boolean; txHas
   }
 
   try {
-    // Create a static network object
-    const network = Network.from(MEGAETH_TESTNET.chainId);
+    const network = new Network(MEGAETH_TESTNET.chainName, MEGAETH_TESTNET.chainId);
     
-    // Initialize provider with static network and disable batching to prevent SSL issues
+    // Initialize provider with full network details
     const rpcProvider = new JsonRpcProvider(MEGAETH_TESTNET.rpcUrls[0], network, { staticNetwork: true });
     
     const serviceAccountWallet = new Wallet(privateKey, rpcProvider);
