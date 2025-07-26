@@ -1,6 +1,6 @@
 'use server';
 
-import { Contract, Wallet, JsonRpcProvider } from "ethers";
+import { Contract, Wallet, JsonRpcProvider, Network } from "ethers";
 import { CONTRACT_ADDRESS, MEGAETH_TESTNET } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
 
@@ -13,24 +13,25 @@ export async function logJob(jobType: string): Promise<{ success: boolean; txHas
   }
 
   try {
-    const rpcProvider = new JsonRpcProvider(MEGAETH_TESTNET.rpcUrls[0]);
+    // Create a static network object
+    const network = Network.from(MEGAETH_TESTNET.chainId);
+    
+    // Initialize provider with static network and disable batching to prevent SSL issues
+    const rpcProvider = new JsonRpcProvider(MEGAETH_TESTNET.rpcUrls[0], network, { staticNetwork: true });
+    
     const serviceAccountWallet = new Wallet(privateKey, rpcProvider);
     const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, serviceAccountWallet);
     
-    // Server-side transaction to prevent contract revert issues from client.
     const tx = await contract.logJob(jobType);
     
-    // Wait for the transaction to be mined.
     const receipt = await tx.wait();
 
-    // Check the transaction status from the receipt.
     if (receipt.status === 1) {
         return { success: true, txHash: tx.hash };
     } else {
         return { success: false, error: "Transaction failed on-chain." };
     }
   } catch (error: any) {
-    // Catch potential errors during transaction creation or sending.
     console.error("Server-side error in logJob:", error);
     return { success: false, error: error.reason || error.message || "An unknown server-side error occurred." };
   }
