@@ -90,8 +90,22 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     if (!selectedJobType || !descriptionValue) return "5 - 10 seconds";
     const { base, factor } = computerTimeFactors[selectedJobType];
     const length = descriptionValue.length;
-    const time = base + length * factor;
-    return `${Math.round(time)} - ${Math.round(time * 1.5)} seconds`;
+    const timeInSeconds = base + length * factor;
+    const highTimeInSeconds = timeInSeconds * 1.5;
+
+    const formatDisplayTime = (seconds: number) => {
+      if (seconds < 60) {
+        return `${Math.round(seconds)} sec`;
+      }
+      return `${(seconds / 60).toFixed(1)} min`;
+    };
+    
+    if (highTimeInSeconds < 60) {
+       return `${Math.round(timeInSeconds)} - ${Math.round(highTimeInSeconds)} seconds`;
+    }
+    
+    return `${formatDisplayTime(timeInSeconds)} - ${formatDisplayTime(highTimeInSeconds)}`;
+
   }, [selectedJobType, descriptionValue]);
 
   async function handleAnalyze(values: z.infer<typeof formSchema>) {
@@ -129,7 +143,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
-      const jobTitle = analysisResult?.title || "Untitled Job";
+      const jobTitle = analysisResult.title;
       const jobDetails = form.getValues().description;
 
       toast({
