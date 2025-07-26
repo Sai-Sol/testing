@@ -3,26 +3,16 @@
  * @fileOverview An AI agent for analyzing quantum job submissions.
  *
  * - analyseQasm - A function that analyzes user input (QASM or prompt) for a quantum job.
- * - AnalyseQasmInput - The input type for the analyseQasm function.
- * - AnalyseQasmOutput - The return type for the analyseQasm function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {
+    AnalyseQasmInputSchema,
+    AnalyseQasmOutputSchema,
+    type AnalyseQasmInput,
+    type AnalyseQasmOutput,
+} from '@/ai/schemas';
 
-export const AnalyseQasmInputSchema = z.object({
-  userInput: z.string().describe('The user provided QASM code or a text prompt.'),
-  submissionType: z.enum(['qasm', 'prompt']).describe('The type of submission from the user.'),
-});
-export type AnalyseQasmInput = z.infer<typeof AnalyseQasmInputSchema>;
-
-export const AnalyseQasmOutputSchema = z.object({
-  title: z.string().describe('A short, descriptive title for the job (e.g., "Bell State Generation").'),
-  complexity: z.string().describe('A brief analysis of the code complexity (e.g., "Low", "Medium", "High").'),
-  analysis: z.string().describe('A one-sentence summary explaining what the code or prompt does.'),
-  optimizations: z.string().describe('A one-sentence suggestion for a potential optimization, or "None" if not applicable.'),
-});
-export type AnalyseQasmOutput = z.infer<typeof AnalyseQasmOutputSchema>;
 
 export async function analyseQasm(input: AnalyseQasmInput): Promise<AnalyseQasmOutput> {
   return analyseQasmFlow(input);

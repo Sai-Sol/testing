@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
-import type { AnalyseQasmOutput } from "@/ai/flows/analyse-qasm-flow";
+import type { AnalyseQasmOutput } from "@/ai/schemas";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
   const [error, setError] = useState<string | null>(null);
   const [filterByUser, setFilterByUser] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const { provider, isConnected } = useWallet();
+  const { provider, isConnected, signer } = useWallet();
   const { user } = useAuth();
 
   const fetchJobs = useCallback(async () => {
@@ -102,21 +102,15 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
   }, [fetchJobs, jobsLastUpdated]);
 
   const filteredJobs = useMemo(() => {
-    if (userRole === "admin" && filterByUser && user?.email) {
-      const currentUserAddress = jobs.find(job => job.user.toLowerCase() === user.email.toLowerCase())?.user;
-       if(user.email === 'p1@example.com' && provider && signer) {
-         return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
-       }
-      return jobs.filter(job => job.user.toLowerCase() === user.email.toLowerCase());
+    if (userRole === "admin" && filterByUser && user?.email && signer) {
+        return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
     }
     if (userRole === "user" && user && signer) {
       return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
     }
     return jobs;
-  }, [jobs, filterByUser, userRole, user, provider, signer]);
+  }, [jobs, filterByUser, userRole, user, signer]);
   
-  const {signer} = useWallet();
-
   const copyToClipboard = (text: string, identifier: string) => {
     navigator.clipboard.writeText(text);
     setCopied(identifier);

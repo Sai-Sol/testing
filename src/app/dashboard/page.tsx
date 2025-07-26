@@ -9,7 +9,7 @@ import JobList from "@/components/job-list";
 import { Loader2 } from "lucide-react";
 import AdminDashboard from "@/components/admin-dashboard";
 import ContractInfo from "@/components/contract-info";
-import type { AnalyseQasmOutput } from "@/ai/flows/analyse-qasm-flow";
+import type { AnalyseQasmOutput } from "@/ai/schemas";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
