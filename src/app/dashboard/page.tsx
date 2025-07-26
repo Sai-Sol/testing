@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import AdminDashboard from "@/components/admin-dashboard";
 import { Bot, Cpu } from "lucide-react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 
 export default function DashboardHomePage() {
   const { user } = useAuth();
@@ -71,13 +70,19 @@ export default function DashboardHomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center justify-center gap-8 py-6">
             <div className="flex flex-col items-center gap-2">
-              <Image src="/logos/ibm.svg" alt="IBM Quantum Logo" width={100} height={40} className="dark:invert" />
+              <div className="p-4 bg-muted rounded-lg w-40 text-center">
+                <p className="font-semibold">IBM Quantum</p>
+              </div>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <Image src="/logos/google.svg" alt="Google Quantum AI Logo" width={120} height={40} className="dark:invert" />
+              <div className="p-4 bg-muted rounded-lg w-40 text-center">
+                <p className="font-semibold">Google Quantum AI</p>
+              </div>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <Image src="/logos/amazon.svg" alt="Amazon Braket Logo" width={120} height={40} className="dark:invert" />
+              <div className="p-4 bg-muted rounded-lg w-40 text-center">
+                <p className="font-semibold">Amazon Braket</p>
+              </div>
             </div>
           </CardContent>
         </Card>
