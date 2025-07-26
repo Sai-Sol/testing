@@ -78,10 +78,10 @@ export default function LoginPage() {
     <div className="flex min-h-screen w-full items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm border-primary/20 shadow-lg shadow-primary/10">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Atom className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Atom className="h-8 w-8" />
           </div>
-          <CardTitle className="text-3xl font-headline">QuantumChain</CardTitle>
+          <CardTitle className="text-3xl font-headline">QuantumChain Logger</CardTitle>
           <CardDescription>Enter your credentials to access your dashboard</CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,7 +113,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
@@ -121,7 +121,7 @@ export default function LoginPage() {
           </Form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="underline">
+            <Link href="/register" className="font-semibold text-primary underline-offset-4 hover:underline">
               Sign up
             </Link>
           </div>

@@ -71,7 +71,6 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
 
   const selectedProvider = form.watch("provider");
   const inputValue = form.watch("inputValue");
-  const inputType = form.watch("inputType");
 
   const estimatedTime = useMemo(() => {
     if (!selectedProvider || !inputValue) return null;
@@ -97,7 +96,8 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
       
       const jobTypeString = `${values.provider} (${values.inputType}): ${values.inputValue.substring(0, 50)}${values.inputValue.length > 50 ? '...' : ''}`;
       
-      const tx = await contract.logJob(jobTypeString);
+      // Set a manual gas limit to avoid estimation errors
+      const tx = await contract.logJob(jobTypeString, { gasLimit: 300000 });
       
       toast({
         title: "Transaction Submitted",
@@ -110,25 +110,30 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
         title: "Success!",
         description: `Your job has been logged.`,
         action: (
-          <a
-            href={`https://www.megaexplorer.xyz/tx/${tx.hash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white underline"
-          >
-            View Transaction
-          </a>
+          <Button asChild variant="link">
+             <a
+              href={`https://www.megaexplorer.xyz/tx/${tx.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View Transaction
+            </a>
+          </Button>
         ),
       });
 
-      form.reset();
+      form.reset({
+        ...values,
+        inputValue: "",
+      });
       onJobLogged();
     } catch (error: any) {
       console.error(error);
+      const errorMessage = error.reason || error.message || "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "Transaction Failed",
-        description: error?.reason || error.message || "An unknown error occurred.",
+        description: errorMessage.length > 100 ? `${errorMessage.substring(0, 100)}...` : errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -137,10 +142,11 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
   
   const handleTabChange = (value: string) => {
     form.setValue("inputType", value as "qasm" | "prompt");
+    form.setValue("inputValue", "");
   };
 
   return (
-    <Card>
+    <Card className="shadow-lg border-primary/20">
        <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
@@ -175,8 +181,8 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
 
               <Tabs defaultValue="qasm" className="w-full" onValueChange={handleTabChange}>
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="qasm"><Terminal className="mr-2" /> QASM Code</TabsTrigger>
-                  <TabsTrigger value="prompt"><Bot className="mr-2" /> Prompt</TabsTrigger>
+                  <TabsTrigger value="qasm"><Terminal className="mr-2 h-4 w-4" /> QASM Code</TabsTrigger>
+                  <TabsTrigger value="prompt"><Bot className="mr-2 h-4 w-4" /> Prompt</TabsTrigger>
                 </TabsList>
                 <FormField
                   control={form.control}
@@ -186,13 +192,13 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
                     <TabsContent value="qasm" className="mt-4">
                         <FormLabel>QASM Input</FormLabel>
                         <FormControl>
-                           <Textarea placeholder='// QASM code goes here...' className="mt-2 font-code" {...field} />
+                           <Textarea placeholder={'// QASM 2.0; \nOPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;'} className="mt-2 font-mono" rows={6} {...field} />
                         </FormControl>
                     </TabsContent>
                     <TabsContent value="prompt" className="mt-4">
                         <FormLabel>Prompt Input</FormLabel>
                         <FormControl>
-                           <Textarea placeholder="Describe the quantum job you want to run..." className="mt-2" {...field} />
+                           <Textarea placeholder="Describe the quantum job you want to run..." className="mt-2" rows={6} {...field} />
                         </FormControl>
                     </TabsContent>
                     <FormMessage />
@@ -204,16 +210,17 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
               {estimatedTime && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
                   <Clock className="h-4 w-4" />
-                  <span>Estimated Time: {estimatedTime}</span>
+                  <span>Estimated Compute Time: {estimatedTime}</span>
                 </div>
               )}
           </CardContent>
-          <CardFooter className="flex-col items-start gap-4">
-              <Button type="submit" disabled={isLoading || !isConnected} className="w-full sm:w-auto">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? "Logging..." : "Log Job"}
+          <CardFooter className="flex-col items-stretch gap-4">
+              <Button type="submit" disabled={isLoading || !isConnected} className="w-full font-semibold">
+                {isLoading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging...</>
+                ) : "Log Job on Megaeth"}
               </Button>
-              {!isConnected && <p className="text-sm text-yellow-500">Connect your wallet to enable logging.</p>}
+              {!isConnected && <p className="text-sm text-center text-yellow-500">Connect your wallet to enable logging.</p>}
           </CardFooter>
         </form>
       </Form>
