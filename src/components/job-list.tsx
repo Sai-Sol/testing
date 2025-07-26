@@ -12,38 +12,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, Clipboard, Check, HardDrive, Filter, Bot, BrainCircuit, ScanText, FileCode } from "lucide-react";
+import { ExternalLink, HardDrive, Filter, Bot, BrainCircuit, ScanText, FileCode, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
 import type { AnalyseQasmOutput } from "@/ai/schemas";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 
 type Job = {
   user: string;
   jobType: string;
   ipfsHash: string;
   timeSubmitted: string;
-  txHash?: string;
+  txHash: string;
+  analysis?: AnalyseQasmOutput | null;
 };
 
 interface JobListProps {
@@ -58,15 +43,15 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterByUser, setFilterByUser] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
   const { provider, isConnected, signer } = useWallet();
   const { user } = useAuth();
+  const [openJob, setOpenJob] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
     if (!provider) {
-       if (!isConnected) {
-         setError("Please connect your wallet to view job history.");
-       }
+      if (!isConnected) {
+        setError("Please connect your wallet to view job history.");
+      }
       setIsLoading(false);
       return;
     }
@@ -76,15 +61,21 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
 
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, provider);
-      const fetchedJobs = await contract.getAllJobs();
+      const filter = contract.filters.JobLogged();
+      const currentBlock = await provider.getBlockNumber();
+      // Query last 100,000 blocks to avoid RPC errors
+      const fromBlock = Math.max(0, currentBlock - 100000); 
 
-      const parsedJobs: Job[] = fetchedJobs.map((job: any, index: number) => ({
-        user: job.user,
-        jobType: job.jobType,
-        ipfsHash: job.ipfsHash,
-        timeSubmitted: new Date(Number(job.timeSubmitted) * 1000).toISOString(),
-      })).reverse();
-      
+      const logs = await contract.queryFilter(filter, fromBlock, 'latest');
+
+      const parsedJobs: Job[] = logs.map(log => ({
+        user: log.args.user,
+        jobType: log.args.jobType,
+        ipfsHash: log.args.ipfsHash,
+        timeSubmitted: new Date(Number(log.args.timeSubmitted) * 1000).toISOString(),
+        txHash: log.transactionHash,
+      })).reverse(); // Show most recent first
+
       setJobs(parsedJobs);
       onTotalJobsChange(parsedJobs.length);
     } catch (e: any) {
@@ -100,6 +91,20 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs, jobsLastUpdated]);
+  
+  // Add latest analysis to the most recent job
+  useEffect(() => {
+    if (latestAnalysis && jobs.length > 0) {
+      setJobs(prevJobs => {
+        const newJobs = [...prevJobs];
+        if (newJobs[0] && newJobs[0].txHash) { // Ensure job exists and has a txHash
+            newJobs[0].analysis = latestAnalysis;
+        }
+        return newJobs;
+      });
+    }
+  }, [latestAnalysis, jobs.length]);
+
 
   const filteredJobs = useMemo(() => {
     if (userRole === "admin" && filterByUser && user?.email && signer) {
@@ -110,59 +115,22 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
     }
     return jobs;
   }, [jobs, filterByUser, userRole, user, signer]);
-  
-  const copyToClipboard = (text: string, identifier: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(identifier);
-    setTimeout(() => setCopied(null), 2000);
-  };
-  
-  const renderJobDialog = (job: Job, analysis: AnalyseQasmOutput | null) => (
-    <DialogContent className="sm:max-w-[625px]">
-      <DialogHeader>
-        <DialogTitle className="font-headline text-2xl flex items-center gap-2"><ScanText/>Job Details</DialogTitle>
-        <DialogDescription>
-           Detailed information for job submitted {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="grid gap-4 py-4">
-        <div className="flex flex-col gap-2 p-4 border rounded-lg bg-muted/50">
-           <h4 className="font-semibold flex items-center gap-2"><FileCode/>User Input</h4>
-           <p className="font-mono text-sm bg-background p-2 rounded-md max-h-48 overflow-auto">{job.ipfsHash}</p>
-           <div className="flex items-center text-xs text-muted-foreground gap-4 pt-2">
-            <span>Submitted by: {job.user}</span>
-            <Button variant="ghost" size="sm" onClick={() => copyToClipboard(job.user, `dialog-user`)}>
-               {copied === `dialog-user` ? <Check size={14} className="text-primary" /> : <Clipboard size={14} />}
-            </Button>
-           </div>
-        </div>
-
-        {analysis && (
-            <div className="flex flex-col gap-2 p-4 border rounded-lg bg-muted/50">
-                <h4 className="font-semibold flex items-center gap-2"><BrainCircuit/> AI Analysis</h4>
-                <p className="text-sm text-muted-foreground">{analysis.analysis}</p>
-                <p className="text-sm mt-2"><strong className="text-foreground">Complexity:</strong> {analysis.complexity}</p>
-                <p className="text-sm"><strong className="text-foreground">Suggested Optimizations:</strong> {analysis.optimizations}</p>
-            </div>
-        )}
-      </div>
-    </DialogContent>
-  );
 
   return (
-    <Card className="h-full bg-card/80 backdrop-blur-sm">
+    <Card className="h-full bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/10">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <CardTitle className="font-headline text-2xl">Job History</CardTitle>
+                <CardTitle className="font-headline text-2xl flex items-center gap-2"><ScanText/>Job History</CardTitle>
                 <CardDescription>
-                  A log of all jobs submitted to the contract. Click a row for details.
+                  A log of all jobs submitted to the contract. Click a job for details.
                 </CardDescription>
             </div>
             {userRole === "admin" && (
               <Button
                 variant={filterByUser ? "secondary" : "outline"}
                 onClick={() => setFilterByUser(prev => !prev)}
+                className="shadow-md"
               >
                 <Filter className="mr-2 h-4 w-4" />
                 {filterByUser ? "Show All Jobs" : "Show My Jobs Only"}
@@ -173,7 +141,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
           </div>
         ) : error ? (
             <Alert variant="destructive">
@@ -187,42 +155,46 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
             <p className="text-sm">{userRole === 'user' ? "Your submitted jobs will appear here." : "No jobs have been logged to the contract yet."}</p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Job Title</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead className="text-right">Explorer</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredJobs.map((job, index) => (
-                <Dialog key={`${job.timeSubmitted}-${index}`}>
-                    <DialogTrigger asChild>
-                      <TableRow className="cursor-pointer">
-                        <TableCell>
-                          <div className="font-medium flex items-center gap-2">
-                             <div className="p-2 bg-primary/10 rounded-md text-primary"><Bot size={16}/></div>
-                             <span>{job.jobType}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}
-                        </TableCell>
-                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
-                              <a href={`https://www.megaexplorer.xyz/address/${job.user}`} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    </DialogTrigger>
-                   {renderJobDialog(job, index === 0 ? latestAnalysis : null)}
-                </Dialog>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="space-y-2">
+            {filteredJobs.map((job, index) => (
+              <Collapsible key={job.txHash} open={openJob === job.txHash} onOpenChange={() => setOpenJob(openJob === job.txHash ? null : job.txHash)}>
+                <CollapsibleTrigger asChild>
+                   <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-lg text-primary"><Bot size={20}/></div>
+                        <div>
+                           <div className="font-medium">{job.jobType}</div>
+                           <div className="text-sm text-muted-foreground">{formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}</div>
+                        </div>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform duration-300 data-[state=open]:rotate-180" />
+                   </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="p-4 pl-6 border-l-2 border-primary ml-6 space-y-4">
+                    <div className="flex flex-col gap-2">
+                       <h4 className="font-semibold flex items-center gap-2 text-primary"><FileCode/>User Input</h4>
+                       <p className="font-mono text-sm bg-background p-3 rounded-md max-h-48 overflow-auto border">{job.ipfsHash}</p>
+                    </div>
+
+                    {job.analysis && (
+                        <div className="flex flex-col gap-2">
+                            <h4 className="font-semibold flex items-center gap-2 text-primary"><BrainCircuit/> AI Analysis</h4>
+                            <p className="text-sm text-muted-foreground">{job.analysis.analysis}</p>
+                            <p className="text-sm mt-2"><strong className="text-foreground">Complexity:</strong> {job.analysis.complexity}</p>
+                            <p className="text-sm"><strong className="text-foreground">Suggested Optimizations:</strong> {job.analysis.optimizations}</p>
+                        </div>
+                    )}
+                    
+                    <a href={`https://www.megaexplorer.xyz/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View Transaction
+                        </Button>
+                    </a>
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
