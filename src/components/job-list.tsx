@@ -195,7 +195,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                     <div className="space-y-2">
                          <h4 className="font-semibold flex items-center gap-2 text-primary"><FileKey/> On-Chain Details</h4>
                          <p className="text-sm font-mono break-all"><strong className="text-foreground">Job Type:</strong> {job.jobType}</p>
-                         <p className="text-sm font-mono break-all"><strong className="text-foreground">IPFS Hash (Title):</strong> {job.ipfsHash}</p>
+                         <p className="text-sm font-mono break-all"><strong className="text-foreground">Summary (from IPFS Hash):</strong> {job.ipfsHash}</p>
                          <p className="text-sm font-mono break-all"><strong className="text-foreground">Tx Hash:</strong> {job.txHash}</p>
                          <a href={`https://www.megaexplorer.xyz/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline" size="sm">

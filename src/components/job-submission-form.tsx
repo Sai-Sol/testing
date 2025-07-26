@@ -144,7 +144,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
       const jobType = form.getValues().jobType;
-      const ipfsHash = analysisResult.title;
+      const ipfsHash = analysisResult.analysis;
 
       toast({
         title: "Please Confirm in Your Wallet",
