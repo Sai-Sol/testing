@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, HardDrive, Filter, Bot, BrainCircuit, ScanText, ChevronDown } from "lucide-react";
+import { ExternalLink, HardDrive, Filter, Bot, BrainCircuit, ScanText, ChevronDown, CheckCircle, FileKey } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
@@ -117,6 +118,8 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
     return jobs;
   }, [jobs, filterByUser, userRole, user, signer]);
 
+  const getJobId = (txHash: string) => `Job #${txHash.slice(0, 6)}...${txHash.slice(-4)}`;
+
   return (
     <Card className="h-full bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/10">
       <CardHeader>
@@ -142,7 +145,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
           </div>
         ) : error ? (
             <Alert variant="destructive">
@@ -156,38 +159,48 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
             <p className="text-sm">{userRole === 'user' ? "Your submitted jobs will appear here." : "No jobs have been logged to the contract yet."}</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {filteredJobs.map((job) => (
               <Collapsible key={job.txHash} open={openJob === job.txHash} onOpenChange={() => setOpenJob(openJob === job.txHash ? null : job.txHash)}>
                 <CollapsibleTrigger asChild>
-                   <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 rounded-lg text-primary"><Bot size={20}/></div>
-                        <div>
-                           <div className="font-medium">{job.analysis?.title || job.jobType}</div>
-                           <div className="text-sm text-muted-foreground">{formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}</div>
+                   <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm w-full text-left">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="p-3 bg-primary/10 rounded-lg text-primary"><Bot size={24}/></div>
+                        <div className="flex-1">
+                           <div className="font-semibold text-base text-foreground">{job.analysis?.title || job.jobType}</div>
+                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                <span className="font-mono">{getJobId(job.txHash)}</span>
+                                <Badge variant="outline" className="text-green-400 border-green-400/50">
+                                    <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                                    Completed
+                                </Badge>
+                                <span>{formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}</span>
+                           </div>
                         </div>
                       </div>
                       <ChevronDown className="h-5 w-5 transition-transform duration-300 data-[state=open]:rotate-180" />
                    </div>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="p-4 pl-6 border-l-2 border-primary ml-6 space-y-4">
+                <CollapsibleContent className="p-4 pl-8 border-l-2 border-primary ml-8 space-y-4 bg-muted/30 rounded-b-lg">
                     {job.analysis && (
                         <div className="flex flex-col gap-2">
                             <h4 className="font-semibold flex items-center gap-2 text-primary"><BrainCircuit/> AI Analysis</h4>
-                            <p className="text-sm"><strong className="text-foreground">Title:</strong> {job.analysis.title}</p>
-                            <p className="text-sm text-muted-foreground">{job.analysis.analysis}</p>
+                            <p className="text-sm"><strong className="text-foreground">Summary:</strong> {job.analysis.analysis}</p>
                             <p className="text-sm mt-2"><strong className="text-foreground">Complexity:</strong> {job.analysis.complexity}</p>
-                            <p className="text-sm"><strong className="text-foreground">Suggested Optimizations:</strong> {job.analysis.optimizations}</p>
+                            <p className="text-sm"><strong className="text-foreground">Optimizations:</strong> {job.analysis.optimizations}</p>
                         </div>
                     )}
                     
-                    <a href={`https://www.megaexplorer.xyz/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline">
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            View Transaction
-                        </Button>
-                    </a>
+                    <div className="space-y-2">
+                         <h4 className="font-semibold flex items-center gap-2 text-primary"><FileKey/> On-Chain Details</h4>
+                         <p className="text-sm font-mono break-all"><strong className="text-foreground">Tx Hash:</strong> {job.txHash}</p>
+                         <a href={`https://www.megaexplorer.xyz/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline" size="sm">
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View Transaction on Explorer
+                            </Button>
+                         </a>
+                    </div>
                 </CollapsibleContent>
               </Collapsible>
             ))}
