@@ -303,7 +303,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
               </div>
               
               {!analysisResult ? (
-                 <Button type="submit" disabled={isAnalyzing || !isConnected || !form.formState.isValid}>
+                 <Button type="submit" disabled={isAnalyzing || !isConnected}>
                     {isAnalyzing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : "Analyze Job"}
                  </Button>
               ) : (
