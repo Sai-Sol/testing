@@ -6,11 +6,9 @@ import type { AnalyseQasmOutput } from "@/ai/schemas";
 
 export default function CreateJobPage() {
     const [, setJobsLastUpdated] = useState(Date.now());
-    const [, setLatestAnalysis] = useState<AnalyseQasmOutput | null>(null);
 
-    const handleJobLogged = (analysis: AnalyseQasmOutput | null) => {
+    const handleJobLogged = () => {
         setJobsLastUpdated(Date.now());
-        setLatestAnalysis(analysis);
     };
 
     return (
