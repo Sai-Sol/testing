@@ -1,62 +1,57 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import Header from "@/components/header";
-import JobSubmissionForm from "@/components/job-submission-form";
-import JobList from "@/components/job-list";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AdminDashboard from "@/components/admin-dashboard";
-import ContractInfo from "@/components/contract-info";
-import type { AnalyseQasmOutput } from "@/ai/schemas";
+import TpsWidget from "@/components/tps-widget";
+import { Bot } from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function DashboardPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [jobsLastUpdated, setJobsLastUpdated] = useState(Date.now());
-  const [totalJobs, setTotalJobs] = useState(0);
-  const [latestAnalysis, setLatestAnalysis] = useState<AnalyseQasmOutput | null>(null);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
-  }, [user, loading, router]);
-
-  const handleJobLogged = useCallback((analysis: AnalyseQasmOutput | null) => {
-    setJobsLastUpdated(Date.now());
-    setLatestAnalysis(analysis);
-  }, []);
-
-  if (loading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+export default function DashboardHomePage() {
+  const { user } = useAuth();
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header />
-      <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6 md:gap-8 md:p-8">
-        {user.role === 'admin' && <AdminDashboard totalJobs={totalJobs} />}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <JobSubmissionForm onJobLogged={handleJobLogged} />
-            <ContractInfo />
-          </div>
-          <div className="lg:col-span-5">
-            <JobList 
-              userRole={user.role} 
-              jobsLastUpdated={jobsLastUpdated} 
-              onTotalJobsChange={setTotalJobs} 
-              latestAnalysis={latestAnalysis}
-            />
-          </div>
+    <div className="flex flex-col gap-8">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center gap-4"
+      >
+        <Avatar className="h-20 w-20 border-4 border-primary/50 shadow-lg">
+           <AvatarFallback className="bg-primary/20">
+             <Bot size={40} className="text-primary"/>
+           </AvatarFallback>
+        </Avatar>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">
+            Welcome back, {user?.email}!
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            I am QuantumAI, your assistant for the QuantumChain platform.
+          </p>
         </div>
-      </main>
+      </motion.div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {user?.role === 'admin' && (
+          <div className="lg:col-span-3">
+            <AdminDashboard totalJobs={0} /> 
+          </div>
+        )}
+        <TpsWidget />
+        <Card>
+          <CardHeader>
+            <CardTitle>Getting Started</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Use the sidebar to navigate. You can create a new quantum job, view the history of all submitted jobs, or check the smart contract details.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -13,7 +13,6 @@ export default function AdminDashboard({ totalJobs }: AdminDashboardProps) {
   const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
-    // This code now runs only on the client, after the component has mounted.
     try {
       const storedUsers = localStorage.getItem("quantum-users-db");
       const users = storedUsers ? JSON.parse(storedUsers) : HARDCODED_USERS;

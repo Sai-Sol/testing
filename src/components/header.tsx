@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useWallet } from "@/hooks/use-wallet";
 import { AiChat } from "./ai-chat";
+import { SidebarTrigger } from "./ui/sidebar";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -29,15 +30,20 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm md:px-6">
-      <Link href="/dashboard" className="flex items-center gap-2">
-        <div className="bg-primary/20 text-primary p-2 rounded-lg">
-          <Bot className="h-6 w-6" />
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
+       <div className="flex items-center gap-2">
+        <div className="block sm:hidden">
+          <SidebarTrigger />
         </div>
-        <span className="font-headline text-lg font-semibold tracking-tight">
-          QuantumChain
-        </span>
-      </Link>
+        <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="bg-primary/20 text-primary p-2 rounded-lg">
+            <Bot className="h-6 w-6" />
+            </div>
+            <span className="font-headline text-lg font-semibold tracking-tight">
+            QuantumChain
+            </span>
+        </Link>
+       </div>
       <div className="ml-auto flex items-center gap-2">
         <AiChat />
         <WalletConnectButton />

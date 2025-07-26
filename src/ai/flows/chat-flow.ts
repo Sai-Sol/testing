@@ -26,6 +26,6 @@ export const chat = ai.defineFlow(
       ],
     });
 
-    return llmResponse.text();
+    return llmResponse.text;
   }
 );
