@@ -156,7 +156,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredJobs.map((job, index) => (
+            {filteredJobs.map((job) => (
               <Collapsible key={job.txHash} open={openJob === job.txHash} onOpenChange={() => setOpenJob(openJob === job.txHash ? null : job.txHash)}>
                 <CollapsibleTrigger asChild>
                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm">
