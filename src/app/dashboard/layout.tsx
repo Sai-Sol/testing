@@ -11,7 +11,6 @@ import { Loader2, Home, PlusSquare, History, FileText } from "lucide-react";
 import {
   SidebarProvider,
   Sidebar,
-  SidebarHeader,
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
@@ -75,10 +74,10 @@ export default function DashboardLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+        <SidebarInset>
             <Header />
             <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
-        </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
