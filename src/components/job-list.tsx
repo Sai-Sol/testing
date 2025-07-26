@@ -61,12 +61,11 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, provider);
       const filter = contract.filters.JobLogged();
       const currentBlock = await provider.getBlockNumber();
-      // Query last 100,000 blocks to avoid RPC errors
-      const fromBlock = Math.max(0, currentBlock - 100000); 
+      const fromBlock = Math.max(0, currentBlock - 99999); // Stay within the 100k limit
 
       const logs = await contract.queryFilter(filter, fromBlock, 'latest');
 
-      const parsedJobs: Job[] = logs.map((log: any) => ({ // Using any for log to avoid TS errors with ethers v6 events
+      const parsedJobs: Job[] = logs.map((log: any) => ({
         user: log.args.user,
         jobType: log.args.jobType,
         ipfsHash: log.args.ipfsHash,

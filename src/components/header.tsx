@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWallet } from "@/hooks/use-wallet";
+import { AiChat } from "./ai-chat";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -37,7 +38,8 @@ export default function Header() {
           QuantumChain
         </span>
       </Link>
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-2">
+        <AiChat />
         <WalletConnectButton />
         {user && (
           <DropdownMenu>
