@@ -4,6 +4,7 @@ import React, { createContext, useState, useEffect, useCallback } from "react";
 import { HARDCODED_USERS } from "@/lib/constants";
 
 type User = {
+  name: string;
   email: string;
   role: "admin" | "user";
 };
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
 
       if (foundUser) {
-        const userToStore = { email: foundUser.email, role: foundUser.role };
+        const userToStore = { name: foundUser.name, email: foundUser.email, role: foundUser.role };
         localStorage.setItem("quantum-user", JSON.stringify(userToStore));
         setUser(userToStore);
         return userToStore;
@@ -67,7 +68,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error("User already exists.");
       }
 
-      const newUser = { ...credentials, role: "user" as const };
+      const name = credentials.email.split('@')[0];
+      const newUser = { ...credentials, name, role: "user" as const };
       users.push(newUser);
       localStorage.setItem("quantum-users-db", JSON.stringify(users));
 

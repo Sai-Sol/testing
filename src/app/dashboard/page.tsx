@@ -26,7 +26,7 @@ export default function DashboardHomePage() {
         </Avatar>
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">
-            Welcome back, {user?.email}!
+            Welcome back, {user?.name}!
           </h1>
           <p className="text-lg text-muted-foreground">
             I am QuantumAI, your assistant for the QuantumChain platform.
