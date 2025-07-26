@@ -14,13 +14,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useWallet } from "@/hooks/use-wallet";
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { disconnectWallet } = useWallet();
   const router = useRouter();
 
   const handleLogout = () => {
     logout();
+    disconnectWallet();
     router.push("/login");
   };
 

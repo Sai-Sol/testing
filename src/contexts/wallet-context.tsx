@@ -117,13 +117,6 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       ethereum.on("accountsChanged", handleAccountsChanged);
       ethereum.on("chainChanged", handleChainChanged);
 
-      // Eagerly connect if already permitted
-      ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
-        if (accounts.length > 0) {
-          updateWalletState(ethereum);
-        }
-      });
-
       return () => {
         ethereum.removeListener("accountsChanged", handleAccountsChanged);
         ethereum.removeListener("chainChanged", handleChainChanged);
