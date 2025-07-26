@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Contract } from "ethers";
 
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +36,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Clock, Terminal, Bot } from "lucide-react";
-import { logJob } from "@/app/actions";
+import { CONTRACT_ADDRESS } from "@/lib/constants";
+import { quantumJobLoggerABI } from "@/lib/contracts";
 
 const formSchema = z.object({
   provider: z.string({ required_error: "Please select a quantum provider." }),
@@ -55,7 +57,7 @@ interface JobSubmissionFormProps {
 
 export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { isConnected } = useWallet();
+  const { isConnected, signer } = useWallet();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -79,25 +81,37 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
   }, [selectedProvider, inputValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!signer) {
+      toast({
+        variant: "destructive",
+        title: "Wallet not connected",
+        description: "Please connect your wallet to log a job.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const jobTypeString = `${values.provider} (${values.inputType}): ${values.inputValue.substring(0, 50)}${values.inputValue.length > 50 ? '...' : ''}`;
       
+      const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
+      
       toast({
         title: "Transaction Submitted",
-        description: "Waiting for confirmation...",
+        description: "Please confirm the transaction in your wallet.",
       });
-      
-      const result = await logJob(jobTypeString);
 
-      if (result.success) {
-        toast({
+      const tx = await contract.logJob(jobTypeString);
+      
+      await tx.wait();
+
+      toast({
           title: "Success!",
           description: `Your job has been logged.`,
           action: (
             <Button asChild variant="link">
               <a
-                href={`https://www.megaexplorer.xyz/tx/${result.txHash}`}
+                href={`https://www.megaexplorer.xyz/tx/${tx.hash}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -106,17 +120,16 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
             </Button>
           ),
         });
-        form.reset({
-          ...values,
-          inputValue: "",
-        });
-        onJobLogged();
-      } else {
-        throw new Error(result.error);
-      }
+
+      form.reset({
+        ...values,
+        inputValue: "",
+      });
+      onJobLogged();
+      
     } catch (error: any) {
       console.error(error);
-      const errorMessage = error.message || "An unknown error occurred.";
+      const errorMessage = error.reason || error.message || "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "Transaction Failed",

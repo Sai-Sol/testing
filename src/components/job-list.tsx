@@ -35,27 +35,6 @@ type Job = {
   txHash: string;
 };
 
-const mockJobs: Job[] = [
-  {
-    user: "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B",
-    jobType: "IBM Quantum (qasm): // Grovers Search...",
-    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-    txHash: "0x2a91f952a2498b9816a10a1203a743343358055598d363753e10a34c11452f1d",
-  },
-  {
-    user: "0x5a2ABc28330756B9189E2565564349479a4918f8",
-    jobType: "Google Quantum AI (prompt): Factorize 15",
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-    txHash: "0x4ed2b3e0c03975586617a221f7e09b1f4c7a6e12e2e85a6e45f1b13a1a68c0d1",
-  },
-  {
-    user: "0x8a1B5A2E8B9075784E97850551C2a2754160E3F3",
-    jobType: "Amazon Braket (qasm): // Bell State...",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    txHash: "0xbe19b9343343358055598d363753e10a34c11452f1d2a91f952a2498b9816a10",
-  },
-];
-
 interface JobListProps {
   userRole: "admin" | "user";
   jobsLastUpdated: number;
@@ -74,13 +53,9 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
 
   const fetchJobs = useCallback(async () => {
     if (!provider) {
-       if (isConnected) {
-        setError("Wallet provider not available, please try reconnecting your wallet.");
-       } else {
-        setError("Please connect your wallet to view job history.");
+       if (!isConnected) {
+         setError("Please connect your wallet to view job history.");
        }
-      setJobs(mockJobs);
-      onTotalJobsChange(mockJobs.length);
       setIsLoading(false);
       return;
     }
@@ -107,14 +82,13 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
         };
       }).reverse();
       
-      const allJobs = [...parsedJobs, ...mockJobs];
-      setJobs(allJobs);
-      onTotalJobsChange(allJobs.length);
+      setJobs(parsedJobs);
+      onTotalJobsChange(parsedJobs.length);
     } catch (e: any) {
       console.error("Failed to fetch jobs:", e);
-      setError("Failed to fetch jobs from the blockchain. Displaying example jobs.");
-      setJobs(mockJobs);
-      onTotalJobsChange(mockJobs.length);
+      setError("Failed to fetch jobs from the blockchain. Please ensure you are on the correct network.");
+      setJobs([]);
+      onTotalJobsChange(0);
     } finally {
       setIsLoading(false);
     }
@@ -172,9 +146,9 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       <CardContent>
         {isLoading ? (
           renderSkeleton()
-        ) : error && jobs.length === mockJobs.length ? ( // Only show error alert if it fails AND we only have mocks
+        ) : error ? (
             <Alert variant="destructive">
-                <AlertTitle>Could Not Fetch Real-time Jobs</AlertTitle>
+                <AlertTitle>Could Not Fetch Jobs</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         ) : filteredJobs.length === 0 ? (
