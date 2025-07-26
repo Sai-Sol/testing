@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Contract } from "ethers";
+import { Contract, Wallet, JsonRpcProvider } from "ethers";
 
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
@@ -36,7 +36,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Clock, Terminal, Bot } from "lucide-react";
-import { CONTRACT_ADDRESS } from "@/lib/constants";
+import { CONTRACT_ADDRESS, MEGAETH_TESTNET } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
 
 const formSchema = z.object({
@@ -57,7 +57,7 @@ interface JobSubmissionFormProps {
 
 export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { signer, isConnected } = useWallet();
+  const { isConnected } = useWallet();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -81,23 +81,24 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
   }, [selectedProvider, inputValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!isConnected || !signer) {
+    if (!process.env.SERVICE_ACCOUNT_PRIVATE_KEY) {
       toast({
         variant: "destructive",
-        title: "Wallet not connected",
-        description: "Please connect your wallet to log a job.",
+        title: "Service Account Not Configured",
+        description: "The service account private key is missing. Please contact support.",
       });
       return;
     }
 
     setIsLoading(true);
     try {
-      const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
+      const rpcProvider = new JsonRpcProvider(MEGAETH_TESTNET.rpcUrls[0]);
+      const serviceAccountWallet = new Wallet(process.env.SERVICE_ACCOUNT_PRIVATE_KEY, rpcProvider);
+      const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, serviceAccountWallet);
       
       const jobTypeString = `${values.provider} (${values.inputType}): ${values.inputValue.substring(0, 50)}${values.inputValue.length > 50 ? '...' : ''}`;
       
-      // Set a manual gas limit to avoid estimation errors
-      const tx = await contract.logJob(jobTypeString, { gasLimit: 300000 });
+      const tx = await contract.logJob(jobTypeString);
       
       toast({
         title: "Transaction Submitted",
