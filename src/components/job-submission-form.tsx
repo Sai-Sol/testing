@@ -143,15 +143,15 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
-      const jobTitle = analysisResult.title;
-      const jobDetails = form.getValues().description;
+      const jobType = form.getValues().jobType;
+      const ipfsHash = analysisResult.title;
 
       toast({
         title: "Please Confirm in Your Wallet",
         description: "Confirm the transaction to log your job on the blockchain.",
       });
 
-      const tx = await contract.logJob(jobTitle, jobDetails);
+      const tx = await contract.logJob(jobType, ipfsHash);
       
       await tx.wait();
 
