@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Link, Clipboard, Check } from "lucide-react";
+import { ExternalLink, Clipboard, Check, HardDrive } from "lucide-react";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
@@ -38,19 +38,24 @@ type Job = {
 interface JobListProps {
   userRole: "admin" | "user";
   jobsLastUpdated: number;
+  onTotalJobsChange: (count: number) => void;
 }
 
-export default function JobList({ userRole, jobsLastUpdated }: JobListProps) {
+export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }: JobListProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
-  const { provider } = useWallet();
+  const { provider, isConnected } = useWallet();
 
   const fetchJobs = useCallback(async () => {
     if (!provider) {
-      setError("Wallet provider not available. Please connect your wallet.");
+       if (isConnected) {
+        setError("Wallet provider not available, please try reconnecting your wallet.");
+       } else {
+        setError("Please connect your wallet to view job history.");
+       }
       setIsLoading(false);
       return;
     }
@@ -71,16 +76,17 @@ export default function JobList({ userRole, jobsLastUpdated }: JobListProps) {
           timestamp: new Date(Number(event.args.timestamp) * 1000).toISOString(),
           txHash: event.transactionHash,
         };
-      }).reverse(); // Show most recent jobs first
+      }).reverse();
 
       setJobs(parsedJobs);
+      onTotalJobsChange(parsedJobs.length);
     } catch (e: any) {
       console.error("Failed to fetch jobs:", e);
-      setError("Failed to fetch jobs from the blockchain. Please try refreshing.");
+      setError("Failed to fetch jobs from the blockchain. Please ensure you are on the correct network and try refreshing.");
     } finally {
       setIsLoading(false);
     }
-  }, [provider]);
+  }, [provider, isConnected, onTotalJobsChange]);
 
   useEffect(() => {
     fetchJobs();
@@ -98,22 +104,21 @@ export default function JobList({ userRole, jobsLastUpdated }: JobListProps) {
   };
 
   const renderSkeleton = () => (
-    <div className="space-y-2">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="flex items-center space-x-4 p-4 rounded-lg border">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-2 flex-1">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+     <div className="space-y-4">
+        {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center space-x-4 p-2">
+                <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </div>
+                 <Skeleton className="h-8 w-24" />
             </div>
-            <Skeleton className="h-8 w-20" />
-        </div>
-      ))}
+        ))}
     </div>
   );
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -142,8 +147,9 @@ export default function JobList({ userRole, jobsLastUpdated }: JobListProps) {
             </Alert>
         ) : filteredJobs.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
-            <p className="text-lg font-medium">No Jobs Found</p>
-            <p>Once jobs are logged, they will appear here.</p>
+            <HardDrive className="mx-auto h-12 w-12 text-muted-foreground" />
+            <p className="mt-4 text-lg font-medium">No Jobs Found</p>
+            <p className="text-sm">Once jobs are logged, they will appear here.</p>
           </div>
         ) : (
           <Table>
@@ -162,7 +168,7 @@ export default function JobList({ userRole, jobsLastUpdated }: JobListProps) {
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm">{`${job.user.slice(0, 6)}...${job.user.slice(-4)}`}</span>
                       <button onClick={() => copyToClipboard(job.user, `user-${job.txHash}`)} className="text-muted-foreground hover:text-foreground">
-                        {copied === `user-${job.txHash}` ? <Check size={14} className="text-green-500" /> : <Clipboard size={14} />}
+                        {copied === `user-${job.txHash}` ? <Check size={14} className="text-primary" /> : <Clipboard size={14} />}
                       </button>
                     </div>
                   </TableCell>
@@ -177,9 +183,9 @@ export default function JobList({ userRole, jobsLastUpdated }: JobListProps) {
                       href={`https://www.megaexplorer.xyz/tx/${job.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-end gap-2 text-primary hover:underline"
+                      className="inline-flex items-center gap-2 text-primary hover:underline"
                     >
-                      <Link size={14} />
+                      <ExternalLink size={14} />
                       View
                     </a>
                   </TableCell>

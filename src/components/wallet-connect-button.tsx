@@ -2,7 +2,7 @@
 
 import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, Wallet } from "lucide-react";
+import { AlertTriangle, Wallet } from "lucide-react";
 import { MEGAETH_TESTNET } from "@/lib/constants";
 import {
   Tooltip,
@@ -17,9 +17,11 @@ export default function WalletConnectButton() {
   const truncateAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+  
+  const isCorrectNetwork = chainId === MEGAETH_TESTNET.chainId;
 
   if (isConnected) {
-    if (chainId !== MEGAETH_TESTNET.chainId) {
+    if (!isCorrectNetwork) {
       return (
         <Button variant="destructive" onClick={connectWallet}>
           <AlertTriangle className="mr-2 h-4 w-4" />

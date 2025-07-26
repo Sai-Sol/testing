@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useCallback, useEffect } from "react";
-import { BrowserProvider, JsonRpcSigner } from "ethers";
+import { BrowserProvider, JsonRpcSigner, Network } from "ethers";
 import { MEGAETH_TESTNET } from "@/lib/constants";
 
 interface WalletContextType {
@@ -15,6 +15,11 @@ interface WalletContextType {
 }
 
 export const WalletContext = createContext<WalletContextType | null>(null);
+
+// Helper to format chainId to a hex string
+const formatChainId = (chainId: bigint | number | string) => {
+  return `0x${BigInt(chainId).toString(16)}`;
+};
 
 export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
@@ -30,6 +35,13 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     }
     return null;
   };
+  
+  const disconnectWallet = useCallback(() => {
+    setProvider(null);
+    setSigner(null);
+    setAddress(null);
+    setChainId(null);
+  }, []);
 
   const updateWalletState = useCallback(async (ethereum: any) => {
     try {
@@ -38,12 +50,12 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       if (accounts.length > 0) {
         const currentSigner = await browserProvider.getSigner();
         const currentAddress = await currentSigner.getAddress();
-        const network = await browserProvider.getNetwork();
+        const network: Network = await browserProvider.getNetwork();
 
         setProvider(browserProvider);
         setSigner(currentSigner);
         setAddress(currentAddress);
-        setChainId(`0x${network.chainId.toString(16)}`);
+        setChainId(formatChainId(network.chainId));
       } else {
         disconnectWallet();
       }
@@ -51,14 +63,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Error updating wallet state:", error);
       disconnectWallet();
     }
-  }, []);
-  
-  const disconnectWallet = () => {
-    setProvider(null);
-    setSigner(null);
-    setAddress(null);
-    setChainId(null);
-  };
+  }, [disconnectWallet]);
 
   const switchNetwork = async (ethereum: any) => {
     try {
@@ -76,8 +81,9 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (addError) {
           console.error("Failed to add network", addError);
         }
+      } else {
+        console.error("Failed to switch network", switchError);
       }
-      console.error("Failed to switch network", switchError);
     }
   };
 
@@ -91,6 +97,12 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await ethereum.request({ method: "eth_requestAccounts" });
       await updateWalletState(ethereum);
+      
+      const currentChainId = await ethereum.request({ method: 'eth_chainId' });
+      if (currentChainId !== MEGAETH_TESTNET.chainId) {
+        await switchNetwork(ethereum);
+      }
+
     } catch (error) {
       console.error("Error connecting wallet:", error);
     }
@@ -98,14 +110,19 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const ethereum = getEthereumObject();
-    if (ethereum) {
+    if (ethereum && ethereum.isMetaMask) {
       const handleAccountsChanged = () => updateWalletState(ethereum);
-      const handleChainChanged = () => updateWalletState(ethereum);
+      const handleChainChanged = () => window.location.reload();
 
       ethereum.on("accountsChanged", handleAccountsChanged);
       ethereum.on("chainChanged", handleChainChanged);
 
-      updateWalletState(ethereum);
+      // Eagerly connect if already permitted
+      ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+        if (accounts.length > 0) {
+          updateWalletState(ethereum);
+        }
+      });
 
       return () => {
         ethereum.removeListener("accountsChanged", handleAccountsChanged);
@@ -113,13 +130,6 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       };
     }
   }, [updateWalletState]);
-
-  useEffect(() => {
-    if (isConnected && chainId && chainId !== MEGAETH_TESTNET.chainId) {
-       const ethereum = getEthereumObject();
-       if (ethereum) switchNetwork(ethereum);
-    }
-  }, [isConnected, chainId]);
 
   return (
     <WalletContext.Provider

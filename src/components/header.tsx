@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Rocket, LogOut, UserCircle } from "lucide-react";
+import { Atom, LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import WalletConnectButton from "./wallet-connect-button";
@@ -25,11 +25,11 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/dashboard" className="flex items-center gap-2">
-        <Rocket className="h-6 w-6 text-primary" />
+        <Atom className="h-6 w-6 text-primary" />
         <span className="font-headline text-lg font-semibold tracking-tight">
-          QuantumChain Logger
+          QuantumChain
         </span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
@@ -38,7 +38,7 @@ export default function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 className="overflow-hidden rounded-full"
               >
