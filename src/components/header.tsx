@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Atom, LogOut, UserCircle } from "lucide-react";
+import { LogOut, UserCircle, Bot } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import WalletConnectButton from "./wallet-connect-button";
@@ -30,7 +30,9 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/dashboard" className="flex items-center gap-2">
-        <Atom className="h-6 w-6 text-primary" />
+        <div className="bg-primary/20 text-primary p-2 rounded-lg">
+          <Bot className="h-6 w-6" />
+        </div>
         <span className="font-headline text-lg font-semibold tracking-tight">
           QuantumChain
         </span>

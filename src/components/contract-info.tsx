@@ -22,10 +22,10 @@ export default function ContractInfo() {
   };
 
   return (
-    <Card>
+    <Card className="bg-card/80 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="font-headline text-xl flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+          <FileText className="h-5 w-5 text-primary" />
           Contract Information
         </CardTitle>
         <CardDescription>
@@ -33,7 +33,7 @@ export default function ContractInfo() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg">
+        <div className="flex items-center justify-between gap-4 p-3 bg-background rounded-lg">
           <p className="font-mono text-sm break-all">
             {CONTRACT_ADDRESS}
           </p>

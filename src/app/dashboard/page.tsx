@@ -9,12 +9,14 @@ import JobList from "@/components/job-list";
 import { Loader2 } from "lucide-react";
 import AdminDashboard from "@/components/admin-dashboard";
 import ContractInfo from "@/components/contract-info";
+import type { AnalyseQasmOutput } from "@/ai/flows/analyse-qasm-flow";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [jobsLastUpdated, setJobsLastUpdated] = useState(Date.now());
   const [totalJobs, setTotalJobs] = useState(0);
+  const [latestAnalysis, setLatestAnalysis] = useState<AnalyseQasmOutput | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -22,8 +24,9 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
-  const handleJobLogged = useCallback(() => {
+  const handleJobLogged = useCallback((analysis: AnalyseQasmOutput | null) => {
     setJobsLastUpdated(Date.now());
+    setLatestAnalysis(analysis);
   }, []);
 
   if (loading || !user) {
@@ -49,6 +52,7 @@ export default function DashboardPage() {
               userRole={user.role} 
               jobsLastUpdated={jobsLastUpdated} 
               onTotalJobsChange={setTotalJobs} 
+              latestAnalysis={latestAnalysis}
             />
           </div>
         </div>

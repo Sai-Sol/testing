@@ -23,27 +23,37 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, Clipboard, Check, HardDrive, Filter } from "lucide-react";
+import { ExternalLink, Clipboard, Check, HardDrive, Filter, Bot, BrainCircuit, ScanText, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
+import type { AnalyseQasmOutput } from "@/ai/flows/analyse-qasm-flow";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 type Job = {
   user: string;
   jobType: string;
   ipfsHash: string;
   timeSubmitted: string;
-  txHash?: string; // Optional, as it's not in the struct
+  txHash?: string;
 };
 
 interface JobListProps {
   userRole: "admin" | "user";
   jobsLastUpdated: number;
   onTotalJobsChange: (count: number) => void;
+  latestAnalysis: AnalyseQasmOutput | null;
 }
 
-export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }: JobListProps) {
+export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, latestAnalysis }: JobListProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +78,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, provider);
       const fetchedJobs = await contract.getAllJobs();
 
-      const parsedJobs: Job[] = fetchedJobs.map((job: any) => ({
+      const parsedJobs: Job[] = fetchedJobs.map((job: any, index: number) => ({
         user: job.user,
         jobType: job.jobType,
         ipfsHash: job.ipfsHash,
@@ -94,49 +104,65 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
   const filteredJobs = useMemo(() => {
     if (userRole === "admin" && filterByUser && user?.email) {
       const currentUserAddress = jobs.find(job => job.user.toLowerCase() === user.email.toLowerCase())?.user;
-       if(user.email === 'p1@example.com' && provider) {
-         return jobs.filter(job => job.user.toLowerCase() === signer?.address.toLowerCase());
+       if(user.email === 'p1@example.com' && provider && signer) {
+         return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
        }
       return jobs.filter(job => job.user.toLowerCase() === user.email.toLowerCase());
     }
-    if (userRole === "user" && user) {
-        if(provider && (window as any).ethereum?.selectedAddress) {
-            return jobs.filter(job => job.user.toLowerCase() === (window as any).ethereum.selectedAddress.toLowerCase());
-        }
+    if (userRole === "user" && user && signer) {
+      return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
     }
     return jobs;
-  }, [jobs, filterByUser, userRole, user, provider]);
+  }, [jobs, filterByUser, userRole, user, provider, signer]);
   
-  const {signer} = useWallet()
+  const {signer} = useWallet();
 
   const copyToClipboard = (text: string, identifier: string) => {
     navigator.clipboard.writeText(text);
     setCopied(identifier);
     setTimeout(() => setCopied(null), 2000);
   };
+  
+  const renderJobDialog = (job: Job, analysis: AnalyseQasmOutput | null) => (
+    <DialogContent className="sm:max-w-[625px]">
+      <DialogHeader>
+        <DialogTitle className="font-headline text-2xl flex items-center gap-2"><ScanText/>Job Details</DialogTitle>
+        <DialogDescription>
+           Detailed information for job submitted {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="grid gap-4 py-4">
+        <div className="flex flex-col gap-2 p-4 border rounded-lg bg-muted/50">
+           <h4 className="font-semibold flex items-center gap-2"><FileCode/>User Input</h4>
+           <p className="font-mono text-sm bg-background p-2 rounded-md max-h-48 overflow-auto">{job.ipfsHash}</p>
+           <div className="flex items-center text-xs text-muted-foreground gap-4 pt-2">
+            <span>Submitted by: {job.user}</span>
+            <Button variant="ghost" size="sm" onClick={() => copyToClipboard(job.user, `dialog-user`)}>
+               {copied === `dialog-user` ? <Check size={14} className="text-primary" /> : <Clipboard size={14} />}
+            </Button>
+           </div>
+        </div>
 
-  const renderSkeleton = () => (
-     <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-4 p-2">
-                <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                </div>
-                 <Skeleton className="h-8 w-24" />
+        {analysis && (
+            <div className="flex flex-col gap-2 p-4 border rounded-lg bg-muted/50">
+                <h4 className="font-semibold flex items-center gap-2"><BrainCircuit/> AI Analysis</h4>
+                <p className="text-sm text-muted-foreground">{analysis.analysis}</p>
+                <p className="text-sm mt-2"><strong className="text-foreground">Complexity:</strong> {analysis.complexity}</p>
+                <p className="text-sm"><strong className="text-foreground">Suggested Optimizations:</strong> {analysis.optimizations}</p>
             </div>
-        ))}
-    </div>
+        )}
+      </div>
+    </DialogContent>
   );
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-card/80 backdrop-blur-sm">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <CardTitle className="font-headline text-2xl">Job History</CardTitle>
                 <CardDescription>
-                  A log of all jobs submitted to the contract.
+                  A log of all jobs submitted to the contract. Click a row for details.
                 </CardDescription>
             </div>
             {userRole === "admin" && (
@@ -152,7 +178,9 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          renderSkeleton()
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
         ) : error ? (
             <Alert variant="destructive">
                 <AlertTitle>Could Not Fetch Jobs</AlertTitle>
@@ -168,33 +196,40 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Job Title</TableHead>
                 <TableHead>User</TableHead>
-                <TableHead>Job Type</TableHead>
-                <TableHead>Description</TableHead>
                 <TableHead>Timestamp</TableHead>
+                <TableHead className="text-right">Explorer</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredJobs.map((job, index) => (
-                <TableRow key={`${job.user}-${job.timeSubmitted}-${index}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{`${job.user.slice(0, 6)}...${job.user.slice(-4)}`}</span>
-                      <button onClick={() => copyToClipboard(job.user, `user-${index}`)} className="text-muted-foreground hover:text-foreground">
-                        {copied === `user-${index}` ? <Check size={14} className="text-primary" /> : <Clipboard size={14} />}
-                      </button>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{job.jobType}</Badge>
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {job.ipfsHash}
-                  </TableCell>
-                  <TableCell>
-                    {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}
-                  </TableCell>
-                </TableRow>
+                <Dialog key={`${job.timeSubmitted}-${index}`}>
+                    <DialogTrigger asChild>
+                      <TableRow className="cursor-pointer">
+                        <TableCell>
+                          <div className="font-medium flex items-center gap-2">
+                             <div className="p-2 bg-primary/10 rounded-md text-primary"><Bot size={16}/></div>
+                             <span>{job.jobType}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{`${job.user.slice(0, 6)}...${job.user.slice(-4)}`}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}
+                        </TableCell>
+                         <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
+                              <a href={`https://www.megaexplorer.xyz/address/${job.user}`} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    </DialogTrigger>
+                   {renderJobDialog(job, index === 0 ? latestAnalysis : null)}
+                </Dialog>
               ))}
             </TableBody>
           </Table>
