@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Contract, Wallet, JsonRpcProvider } from "ethers";
 
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
@@ -36,8 +35,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Clock, Terminal, Bot } from "lucide-react";
-import { CONTRACT_ADDRESS, MEGAETH_TESTNET } from "@/lib/constants";
-import { quantumJobLoggerABI } from "@/lib/contracts";
+import { logJob } from "@/app/actions";
 
 const formSchema = z.object({
   provider: z.string({ required_error: "Please select a quantum provider." }),
@@ -81,56 +79,44 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
   }, [selectedProvider, inputValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!process.env.SERVICE_ACCOUNT_PRIVATE_KEY) {
-      toast({
-        variant: "destructive",
-        title: "Service Account Not Configured",
-        description: "The service account private key is missing. Please contact support.",
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const rpcProvider = new JsonRpcProvider(MEGAETH_TESTNET.rpcUrls[0]);
-      const serviceAccountWallet = new Wallet(process.env.SERVICE_ACCOUNT_PRIVATE_KEY, rpcProvider);
-      const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, serviceAccountWallet);
-      
       const jobTypeString = `${values.provider} (${values.inputType}): ${values.inputValue.substring(0, 50)}${values.inputValue.length > 50 ? '...' : ''}`;
-      
-      const tx = await contract.logJob(jobTypeString);
       
       toast({
         title: "Transaction Submitted",
         description: "Waiting for confirmation...",
       });
+      
+      const result = await logJob(jobTypeString);
 
-      await tx.wait();
-
-      toast({
-        title: "Success!",
-        description: `Your job has been logged.`,
-        action: (
-          <Button asChild variant="link">
-             <a
-              href={`https://www.megaexplorer.xyz/tx/${tx.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View Transaction
-            </a>
-          </Button>
-        ),
-      });
-
-      form.reset({
-        ...values,
-        inputValue: "",
-      });
-      onJobLogged();
+      if (result.success) {
+        toast({
+          title: "Success!",
+          description: `Your job has been logged.`,
+          action: (
+            <Button asChild variant="link">
+              <a
+                href={`https://www.megaexplorer.xyz/tx/${result.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View Transaction
+              </a>
+            </Button>
+          ),
+        });
+        form.reset({
+          ...values,
+          inputValue: "",
+        });
+        onJobLogged();
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
       console.error(error);
-      const errorMessage = error.reason || error.message || "An unknown error occurred.";
+      const errorMessage = error.message || "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "Transaction Failed",
