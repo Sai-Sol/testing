@@ -2,10 +2,11 @@
 
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import AdminDashboard from "@/components/admin-dashboard";
-import { Bot, Cpu } from "lucide-react";
+import { Bot, Cpu, Briefcase, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function DashboardHomePage() {
   const { user } = useAuth();
@@ -41,6 +42,18 @@ export default function DashboardHomePage() {
         )}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">About QuantumChain</CardTitle>
+            <Bot className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Quantum Aggregator</div>
+            <p className="text-xs text-muted-foreground">
+              QuantumChain is an aggregator of multiple quantum cloud platforms, providing a single interface to access the world's leading quantum computers.
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">About MegaETH</CardTitle>
             <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -51,17 +64,23 @@ export default function DashboardHomePage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
+            <CardTitle>Our Partners</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Use the sidebar to navigate. You can create a new quantum job, view the history of all submitted jobs, or check the smart contract details.
-            </p>
+          <CardContent className="flex flex-wrap items-center justify-center gap-8">
+            <div className="flex flex-col items-center gap-2" data-ai-hint="IBM logo">
+              <Image src="https://placehold.co/120x40.png" alt="IBM Quantum Logo" width={120} height={40} className="grayscale brightness-150" />
+            </div>
+            <div className="flex flex-col items-center gap-2" data-ai-hint="Google logo">
+              <Image src="https://placehold.co/120x40.png" alt="Google Quantum AI Logo" width={120} height={40} className="grayscale brightness-150" />
+            </div>
+            <div className="flex flex-col items-center gap-2" data-ai-hint="Amazon Web Services logo">
+              <Image src="https://placehold.co/120x40.png" alt="Amazon Braket Logo" width={120} height={40} className="grayscale brightness-150" />
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-}
