@@ -48,10 +48,8 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
   const [openJob, setOpenJob] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
-    if (!provider) {
-      if (!isConnected) {
-        setError("Please connect your wallet to view job history.");
-      }
+    if (!isConnected || !provider) {
+      setError("Please connect your wallet to view job history.");
       setIsLoading(false);
       return;
     }
@@ -68,7 +66,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
 
       const logs = await contract.queryFilter(filter, fromBlock, 'latest');
 
-      const parsedJobs: Job[] = logs.map(log => ({
+      const parsedJobs: Job[] = logs.map((log: any) => ({ // Using any for log to avoid TS errors with ethers v6 events
         user: log.args.user,
         jobType: log.args.jobType,
         ipfsHash: log.args.ipfsHash,
@@ -80,7 +78,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
       onTotalJobsChange(parsedJobs.length);
     } catch (e: any) {
       console.error("Failed to fetch jobs:", e);
-      setError("Failed to fetch jobs from the blockchain. Please ensure you are on the correct network and refresh.");
+      setError(`Failed to fetch jobs from the blockchain. Please ensure you are on the correct network and refresh. Error: ${e.message}`);
       setJobs([]);
       onTotalJobsChange(0);
     } finally {
@@ -97,13 +95,17 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
     if (latestAnalysis && jobs.length > 0) {
       setJobs(prevJobs => {
         const newJobs = [...prevJobs];
-        if (newJobs[0] && newJobs[0].txHash) { // Ensure job exists and has a txHash
-            newJobs[0].analysis = latestAnalysis;
+        const mostRecentJob = newJobs[0];
+        if (mostRecentJob && mostRecentJob.txHash) { // Ensure job exists and has a txHash
+            // Heuristic: Match based on signer address and a small time window if txHash isn't immediately available
+            if (signer && mostRecentJob.user.toLowerCase() === signer.address.toLowerCase()) {
+                 newJobs[0].analysis = latestAnalysis;
+            }
         }
         return newJobs;
       });
     }
-  }, [latestAnalysis, jobs.length]);
+  }, [latestAnalysis, jobs.length, signer]);
 
 
   const filteredJobs = useMemo(() => {
@@ -163,7 +165,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-primary/10 rounded-lg text-primary"><Bot size={20}/></div>
                         <div>
-                           <div className="font-medium">{job.jobType}</div>
+                           <div className="font-medium">{job.analysis?.title || job.jobType}</div>
                            <div className="text-sm text-muted-foreground">{formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}</div>
                         </div>
                       </div>
@@ -174,6 +176,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                     {job.analysis && (
                         <div className="flex flex-col gap-2">
                             <h4 className="font-semibold flex items-center gap-2 text-primary"><BrainCircuit/> AI Analysis</h4>
+                            <p className="text-sm"><strong className="text-foreground">Title:</strong> {job.analysis.title}</p>
                             <p className="text-sm text-muted-foreground">{job.analysis.analysis}</p>
                             <p className="text-sm mt-2"><strong className="text-foreground">Complexity:</strong> {job.analysis.complexity}</p>
                             <p className="text-sm"><strong className="text-foreground">Suggested Optimizations:</strong> {job.analysis.optimizations}</p>
