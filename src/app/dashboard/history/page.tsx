@@ -5,7 +5,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import type { AnalyseQasmOutput } from "@/ai/schemas";
 
-export default function HistoryPage() {
+interface HistoryPageProps {
+  jobsLastUpdated?: number;
+  latestAnalysis?: AnalyseQasmOutput | null;
+}
+
+export default function HistoryPage({ jobsLastUpdated: propJobsLastUpdated, latestAnalysis: propLatestAnalysis }: HistoryPageProps) {
     const { user } = useAuth();
     const [jobsLastUpdated, setJobsLastUpdated] = useState(Date.now());
     const [totalJobs, setTotalJobs] = useState(0);
@@ -17,9 +22,9 @@ export default function HistoryPage() {
         <div>
             <JobList 
                 userRole={user.role} 
-                jobsLastUpdated={jobsLastUpdated} 
+                jobsLastUpdated={propJobsLastUpdated ?? jobsLastUpdated} 
                 onTotalJobsChange={setTotalJobs} 
-                latestAnalysis={latestAnalysis}
+                latestAnalysis={propLatestAnalysis ?? latestAnalysis}
             />
         </div>
     );

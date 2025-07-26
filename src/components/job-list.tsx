@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -167,7 +168,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                       <div className="flex items-center gap-4 flex-1">
                         <div className="p-3 bg-primary/10 rounded-lg text-primary"><Bot size={24}/></div>
                         <div className="flex-1">
-                           <div className="font-semibold text-base text-foreground">{job.analysis?.title || job.jobType}</div>
+                           <div className="font-semibold text-base text-foreground">{job.analysis?.title || job.ipfsHash}</div>
                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                                 <span className="font-mono">{getJobId(job.txHash)}</span>
                                 <Badge variant="outline" className="text-green-400 border-green-400/50">
@@ -193,6 +194,8 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                     
                     <div className="space-y-2">
                          <h4 className="font-semibold flex items-center gap-2 text-primary"><FileKey/> On-Chain Details</h4>
+                         <p className="text-sm font-mono break-all"><strong className="text-foreground">Job Type:</strong> {job.jobType}</p>
+                         <p className="text-sm font-mono break-all"><strong className="text-foreground">IPFS Hash (Title):</strong> {job.ipfsHash}</p>
                          <p className="text-sm font-mono break-all"><strong className="text-foreground">Tx Hash:</strong> {job.txHash}</p>
                          <a href={`https://www.megaexplorer.xyz/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline" size="sm">
