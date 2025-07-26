@@ -41,6 +41,8 @@ interface JobListProps {
   onTotalJobsChange: (count: number) => void;
 }
 
+const MAX_BLOCK_RANGE = 100000;
+
 export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }: JobListProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,8 +67,12 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
 
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, provider);
-      const filter = contract.filters.JobLogged();
-      const logs = await contract.queryFilter(filter);
+      const eventFilter = contract.filters.JobLogged();
+      
+      const latestBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, latestBlock - MAX_BLOCK_RANGE);
+
+      const logs = await contract.queryFilter(eventFilter, fromBlock, latestBlock);
 
       const parsedJobs: Job[] = logs.map(log => {
         const event = log as EventLog;
