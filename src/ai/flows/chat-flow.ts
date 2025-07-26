@@ -5,7 +5,7 @@
  * - chat - A function that takes a message history and returns a response from the AI.
  */
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit/zod';
+import {z} from 'genkit';
 
 export const chat = ai.defineFlow(
   {
