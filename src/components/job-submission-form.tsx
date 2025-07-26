@@ -74,7 +74,6 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
 
   const selectedJobType = form.watch("jobType");
   const descriptionValue = form.watch("description");
-  const submissionType = form.watch("submissionType");
 
   const estimatedTime = useMemo(() => {
     if (!selectedJobType || !descriptionValue) return "5 - 10 seconds";
@@ -237,6 +236,9 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
             </Tabs>
           </CardContent>
           <CardFooter className="flex-col items-stretch gap-4">
+              <div className="text-sm text-center text-muted-foreground bg-background/50 rounded-lg p-3">
+                Estimated time to completion: <span className="font-medium text-foreground">{estimatedTime}</span>
+              </div>
               <Button type="submit" disabled={isLoadingState || !isConnected} className="w-full font-semibold">
                 {isAnalyzing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> :
                  isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging Job...</> : 

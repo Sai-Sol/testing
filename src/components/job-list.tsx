@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, HardDrive, Filter, Bot, BrainCircuit, ScanText, FileCode, ChevronDown } from "lucide-react";
+import { ExternalLink, HardDrive, Filter, Bot, BrainCircuit, ScanText, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -171,11 +171,6 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                    </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-4 pl-6 border-l-2 border-primary ml-6 space-y-4">
-                    <div className="flex flex-col gap-2">
-                       <h4 className="font-semibold flex items-center gap-2 text-primary"><FileCode/>User Input</h4>
-                       <p className="font-mono text-sm bg-background p-3 rounded-md max-h-48 overflow-auto border">{job.ipfsHash}</p>
-                    </div>
-
                     {job.analysis && (
                         <div className="flex flex-col gap-2">
                             <h4 className="font-semibold flex items-center gap-2 text-primary"><BrainCircuit/> AI Analysis</h4>
