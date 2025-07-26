@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, UserCircle, Bot } from "lucide-react";
+import { LogOut, UserCircle, Bot, Home, PlusSquare, History, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import WalletConnectButton from "./wallet-connect-button";
@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useWallet } from "@/hooks/use-wallet";
 import { AiChat } from "./ai-chat";
-import { SidebarTrigger } from "./ui/sidebar";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { disconnectWallet } = useWallet();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     logout();
@@ -29,12 +30,16 @@ export default function Header() {
     router.push("/login");
   };
 
+  const navItems = [
+      { href: "/dashboard", label: "Home", icon: Home },
+      { href: "/dashboard/create", label: "Create Job", icon: PlusSquare },
+      { href: "/dashboard/history", label: "Job History", icon: History },
+      { href: "/dashboard/contract", label: "Contract Info", icon: FileText },
+  ];
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
        <div className="flex items-center gap-2">
-        <div className="block sm:hidden">
-          <SidebarTrigger />
-        </div>
         <Link href="/dashboard" className="flex items-center gap-2">
             <div className="bg-primary/20 text-primary p-2 rounded-lg">
             <Bot className="h-6 w-6" />
@@ -44,6 +49,16 @@ export default function Header() {
             </span>
         </Link>
        </div>
+        <nav className="hidden md:flex items-center gap-2">
+            {navItems.map((item) => (
+                <Link key={item.href} href={item.href}>
+                    <Button variant={pathname === item.href ? "secondary" : "ghost"}>
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {item.label}
+                    </Button>
+                </Link>
+            ))}
+        </nav>
       <div className="ml-auto flex items-center gap-2">
         <AiChat />
         <WalletConnectButton />

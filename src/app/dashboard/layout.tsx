@@ -2,21 +2,9 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { Loader2, Home, PlusSquare, History, FileText } from "lucide-react";
-
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
-} from "@/components/ui/sidebar";
+import { Loader2 } from "lucide-react";
 import Header from "@/components/header";
 
 export default function DashboardLayout({
@@ -26,7 +14,6 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -42,43 +29,10 @@ export default function DashboardLayout({
     );
   }
 
-  const menuItems = [
-    { href: "/dashboard", label: "Home", icon: Home },
-    { href: "/dashboard/create", label: "Create Job", icon: PlusSquare },
-    { href: "/dashboard/history", label: "Job History", icon: History },
-    { href: "/dashboard/contract", label: "Contract Info", icon: FileText },
-  ];
-
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
-        <Sidebar collapsible="icon">
-          <SidebarContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} passHref>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === item.href}
-                      tooltip={item.label}
-                    >
-                      <>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-            <Header />
-            <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <Header />
+      <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
+    </div>
   );
 }
