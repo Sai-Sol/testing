@@ -191,7 +191,6 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
             <TableHeader>
               <TableRow>
                 <TableHead>Job Title</TableHead>
-                <TableHead>User</TableHead>
                 <TableHead>Timestamp</TableHead>
                 <TableHead className="text-right">Explorer</TableHead>
               </TableRow>
@@ -206,9 +205,6 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                              <div className="p-2 bg-primary/10 rounded-md text-primary"><Bot size={16}/></div>
                              <span>{job.jobType}</span>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{`${job.user.slice(0, 6)}...${job.user.slice(-4)}`}</Badge>
                         </TableCell>
                         <TableCell>
                           {formatDistanceToNow(new Date(job.timeSubmitted), { addSuffix: true })}

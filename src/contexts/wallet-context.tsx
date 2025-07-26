@@ -1,13 +1,14 @@
 "use client";
 
 import React, { createContext, useState, useCallback, useEffect } from "react";
-import { BrowserProvider, JsonRpcSigner, Network } from "ethers";
+import { BrowserProvider, JsonRpcSigner, Network, formatEther } from "ethers";
 
 interface WalletContextType {
   provider: BrowserProvider | null;
   signer: JsonRpcSigner | null;
   address: string | null;
   chainId: string | null;
+  balance: string | null;
   isConnected: boolean;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
@@ -25,6 +26,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
 
   const isConnected = !!address;
 
@@ -40,6 +42,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     setSigner(null);
     setAddress(null);
     setChainId(null);
+    setBalance(null);
   }, []);
 
   const updateWalletState = useCallback(async (ethereum: any) => {
@@ -50,11 +53,13 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
         const currentSigner = await browserProvider.getSigner();
         const currentAddress = await currentSigner.getAddress();
         const network: Network = await browserProvider.getNetwork();
+        const currentBalance = await browserProvider.getBalance(currentAddress);
 
         setProvider(browserProvider);
         setSigner(currentSigner);
         setAddress(currentAddress);
         setChainId(formatChainId(network.chainId));
+        setBalance(formatEther(currentBalance));
       } else {
         disconnectWallet();
       }
@@ -84,7 +89,10 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     const ethereum = getEthereumObject();
     if (ethereum && ethereum.isMetaMask) {
       const handleAccountsChanged = () => updateWalletState(ethereum);
-      const handleChainChanged = (newChainId: string) => setChainId(formatChainId(newChainId));
+      const handleChainChanged = (newChainId: string) => {
+        setChainId(formatChainId(newChainId));
+        updateWalletState(ethereum);
+      }
 
       ethereum.on("accountsChanged", handleAccountsChanged);
       ethereum.on("chainChanged", handleChainChanged);
@@ -98,7 +106,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <WalletContext.Provider
-      value={{ provider, signer, address, chainId, isConnected, connectWallet, disconnectWallet }}
+      value={{ provider, signer, address, chainId, balance, isConnected, connectWallet, disconnectWallet }}
     >
       {children}
     </WalletContext.Provider>
