@@ -2,7 +2,6 @@
 
 import React, { createContext, useState, useCallback, useEffect } from "react";
 import { BrowserProvider, JsonRpcSigner, Network } from "ethers";
-import { MEGAETH_TESTNET } from "@/lib/constants";
 
 interface WalletContextType {
   provider: BrowserProvider | null;
@@ -65,28 +64,6 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [disconnectWallet]);
 
-  const switchNetwork = async (ethereum: any) => {
-    try {
-      await ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: MEGAETH_TESTNET.chainId }],
-      });
-    } catch (switchError: any) {
-      if (switchError.code === 4902) {
-        try {
-          await ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [MEGAETH_TESTNET],
-          });
-        } catch (addError) {
-          console.error("Failed to add network", addError);
-        }
-      } else {
-        console.error("Failed to switch network", switchError);
-      }
-    }
-  };
-
   const connectWallet = async () => {
     const ethereum = getEthereumObject();
     if (!ethereum) {
@@ -95,14 +72,9 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      // Request account access
       await ethereum.request({ method: "eth_requestAccounts" });
       await updateWalletState(ethereum);
-      
-      const currentChainId = await ethereum.request({ method: 'eth_chainId' });
-      if (currentChainId !== MEGAETH_TESTNET.chainId) {
-        await switchNetwork(ethereum);
-      }
-
     } catch (error) {
       console.error("Error connecting wallet:", error);
     }
@@ -112,7 +84,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     const ethereum = getEthereumObject();
     if (ethereum && ethereum.isMetaMask) {
       const handleAccountsChanged = () => updateWalletState(ethereum);
-      const handleChainChanged = () => window.location.reload();
+      const handleChainChanged = (newChainId: string) => setChainId(formatChainId(newChainId));
 
       ethereum.on("accountsChanged", handleAccountsChanged);
       ethereum.on("chainChanged", handleChainChanged);

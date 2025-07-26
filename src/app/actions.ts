@@ -17,15 +17,20 @@ export async function logJob(jobType: string): Promise<{ success: boolean; txHas
     const serviceAccountWallet = new Wallet(privateKey, rpcProvider);
     const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, serviceAccountWallet);
     
+    // Server-side transaction to prevent contract revert issues from client.
     const tx = await contract.logJob(jobType);
+    
+    // Wait for the transaction to be mined.
     const receipt = await tx.wait();
 
+    // Check the transaction status from the receipt.
     if (receipt.status === 1) {
         return { success: true, txHash: tx.hash };
     } else {
         return { success: false, error: "Transaction failed on-chain." };
     }
   } catch (error: any) {
+    // Catch potential errors during transaction creation or sending.
     console.error("Server-side error in logJob:", error);
     return { success: false, error: error.reason || error.message || "An unknown server-side error occurred." };
   }
