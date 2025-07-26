@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import AdminDashboard from "@/components/admin-dashboard";
-import { Bot, Cpu, Briefcase, Users } from "lucide-react";
+import { Bot, Cpu } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -84,3 +84,4 @@ export default function DashboardHomePage() {
       </div>
     </div>
   );
+}
