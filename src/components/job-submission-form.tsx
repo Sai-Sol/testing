@@ -46,7 +46,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const formSchema = z.object({
   jobType: z.string().min(1, { message: "Job type cannot be empty." }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  description: z.string(),
   submissionType: z.enum(["prompt", "qasm"]),
 });
 
@@ -71,7 +71,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     resolver: zodResolver(formSchema),
     defaultValues: {
       jobType: "IBM Quantum",
-      description: "",
+      description: "factor the largest 8 digit number",
       submissionType: "prompt",
     },
   });
@@ -129,16 +129,15 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
-      const { jobType, submissionType, description } = form.getValues();
       const jobTitle = analysisResult?.title || "Untitled Job";
-      const fullDescription = `[${jobType} | ${submissionType}] ${description}`;
+      const jobDetails = analysisResult?.analysis || form.getValues().description;
 
       toast({
         title: "Please Confirm in Your Wallet",
         description: "Confirm the transaction to log your job on the blockchain.",
       });
 
-      const tx = await contract.logJob(jobTitle, fullDescription);
+      const tx = await contract.logJob(jobTitle, jobDetails);
       
       await tx.wait();
 
@@ -155,9 +154,9 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
       });
 
       form.reset({
-        jobType: jobType,
+        jobType: form.getValues().jobType,
         description: "",
-        submissionType: submissionType,
+        submissionType: form.getValues().submissionType,
       });
       setAnalysisResult(null);
       onJobLogged(analysisResult);
