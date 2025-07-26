@@ -17,6 +17,7 @@ import {
 import { useWallet } from "@/hooks/use-wallet";
 import { AiChat } from "./ai-chat";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./theme-toggle";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -60,6 +61,7 @@ export default function Header() {
             ))}
         </nav>
       <div className="ml-auto flex items-center gap-2">
+        <ThemeToggle />
         <AiChat />
         <WalletConnectButton />
         {user && (

@@ -69,15 +69,15 @@ export default function DashboardHomePage() {
           <CardHeader>
             <CardTitle>Our Partners</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center justify-center gap-8">
-            <div className="flex flex-col items-center gap-2" data-ai-hint="IBM logo">
-              <Image src="https://placehold.co/120x40.png" alt="IBM Quantum Logo" width={120} height={40} className="grayscale brightness-150" />
+          <CardContent className="flex flex-wrap items-center justify-center gap-8 py-6">
+            <div className="flex flex-col items-center gap-2">
+              <Image src="/logos/ibm.svg" alt="IBM Quantum Logo" width={100} height={40} className="dark:invert" />
             </div>
-            <div className="flex flex-col items-center gap-2" data-ai-hint="Google logo">
-              <Image src="https://placehold.co/120x40.png" alt="Google Quantum AI Logo" width={120} height={40} className="grayscale brightness-150" />
+            <div className="flex flex-col items-center gap-2">
+              <Image src="/logos/google.svg" alt="Google Quantum AI Logo" width={120} height={40} className="dark:invert" />
             </div>
-            <div className="flex flex-col items-center gap-2" data-ai-hint="Amazon Web Services logo">
-              <Image src="https://placehold.co/120x40.png" alt="Amazon Braket Logo" width={120} height={40} className="grayscale brightness-150" />
+            <div className="flex flex-col items-center gap-2">
+              <Image src="/logos/amazon.svg" alt="Amazon Braket Logo" width={120} height={40} className="dark:invert" />
             </div>
           </CardContent>
         </Card>
