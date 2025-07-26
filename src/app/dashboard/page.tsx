@@ -4,8 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AdminDashboard from "@/components/admin-dashboard";
-import TpsWidget from "@/components/tps-widget";
-import { Bot } from "lucide-react";
+import { Bot, Cpu } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function DashboardHomePage() {
@@ -40,7 +39,18 @@ export default function DashboardHomePage() {
             <AdminDashboard totalJobs={0} /> 
           </div>
         )}
-        <TpsWidget />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">About MegaETH</CardTitle>
+            <Cpu className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">High-Throughput L2</div>
+             <p className="text-xs text-muted-foreground">
+              MegaETH is a high-performance Layer 2 blockchain designed for scalability and speed, making it ideal for logging quantum jobs immutably.
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>Getting Started</CardTitle>
