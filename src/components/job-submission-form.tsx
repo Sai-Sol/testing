@@ -130,7 +130,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
       const jobTitle = analysisResult?.title || "Untitled Job";
-      const jobDetails = analysisResult?.analysis || form.getValues().description;
+      const jobDetails = form.getValues().description;
 
       toast({
         title: "Please Confirm in Your Wallet",
