@@ -33,18 +33,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Clock, Terminal, Bot } from "lucide-react";
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
 
 const formSchema = z.object({
-  jobType: z.string({ required_error: "Please select a quantum computer." }),
+  provider: z.string({ required_error: "Please select a quantum provider." }),
+  inputType: z.enum(["qasm", "prompt"]),
+  inputValue: z.string().min(1, { message: "Input cannot be empty." }),
 });
 
-const computerTimeEstimates: Record<string, string> = {
-  "IBM Quantum": "5-15 minutes",
-  "Google Quantum AI": "10-25 minutes",
-  "Amazon Braket": "8-20 minutes",
+const computerTimeFactors: Record<string, { base: number; factor: number }> = {
+  "IBM Quantum": { base: 5, factor: 0.05 },
+  "Google Quantum AI": { base: 10, factor: 0.1 },
+  "Amazon Braket": { base: 8, factor: 0.08 },
 };
 
 interface JobSubmissionFormProps {
@@ -59,16 +63,23 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jobType: undefined,
+      provider: undefined,
+      inputType: "qasm",
+      inputValue: "",
     },
   });
 
-  const selectedComputer = form.watch("jobType");
+  const selectedProvider = form.watch("provider");
+  const inputValue = form.watch("inputValue");
+  const inputType = form.watch("inputType");
 
   const estimatedTime = useMemo(() => {
-    if (!selectedComputer) return null;
-    return computerTimeEstimates[selectedComputer];
-  }, [selectedComputer]);
+    if (!selectedProvider || !inputValue) return null;
+    const { base, factor } = computerTimeFactors[selectedProvider];
+    const length = inputValue.length;
+    const time = base + length * factor;
+    return `${Math.round(time)} - ${Math.round(time * 1.5)} minutes`;
+  }, [selectedProvider, inputValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!isConnected || !signer) {
@@ -83,7 +94,10 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     setIsLoading(true);
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
-      const tx = await contract.logJob(values.jobType);
+      
+      const jobTypeString = `${values.provider} (${values.inputType}): ${values.inputValue.substring(0, 50)}${values.inputValue.length > 50 ? '...' : ''}`;
+      
+      const tx = await contract.logJob(jobTypeString);
       
       toast({
         title: "Transaction Submitted",
@@ -94,7 +108,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
 
       toast({
         title: "Success!",
-        description: `Your job on ${values.jobType} has been logged.`,
+        description: `Your job has been logged.`,
         action: (
           <a
             href={`https://www.megaexplorer.xyz/tx/${tx.hash}`}
@@ -120,6 +134,10 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
       setIsLoading(false);
     }
   }
+  
+  const handleTabChange = (value: string) => {
+    form.setValue("inputType", value as "qasm" | "prompt");
+  };
 
   return (
     <Card>
@@ -128,13 +146,13 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Log a New Job</CardTitle>
             <CardDescription>
-              Select a quantum computer to run your job on the Megaeth Testnet.
+              Select a provider and submit your QASM code or prompt.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
               <FormField
                 control={form.control}
-                name="jobType"
+                name="provider"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Quantum Provider</FormLabel>
@@ -154,6 +172,35 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
                   </FormItem>
                 )}
               />
+
+              <Tabs defaultValue="qasm" className="w-full" onValueChange={handleTabChange}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="qasm"><Terminal className="mr-2" /> QASM Code</TabsTrigger>
+                  <TabsTrigger value="prompt"><Bot className="mr-2" /> Prompt</TabsTrigger>
+                </TabsList>
+                <FormField
+                  control={form.control}
+                  name="inputValue"
+                  render={({ field }) => (
+                  <FormItem>
+                    <TabsContent value="qasm" className="mt-4">
+                        <FormLabel>QASM Input</FormLabel>
+                        <FormControl>
+                           <Textarea placeholder='// QASM code goes here...' className="mt-2 font-code" {...field} />
+                        </FormControl>
+                    </TabsContent>
+                    <TabsContent value="prompt" className="mt-4">
+                        <FormLabel>Prompt Input</FormLabel>
+                        <FormControl>
+                           <Textarea placeholder="Describe the quantum job you want to run..." className="mt-2" {...field} />
+                        </FormControl>
+                    </TabsContent>
+                    <FormMessage />
+                   </FormItem>
+                  )}
+                />
+              </Tabs>
+
               {estimatedTime && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
                   <Clock className="h-4 w-4" />

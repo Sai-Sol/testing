@@ -3,7 +3,6 @@
 import { useWallet } from "@/hooks/use-wallet";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Wallet } from "lucide-react";
-import { MEGAETH_TESTNET } from "@/lib/constants";
 import {
   Tooltip,
   TooltipContent,
@@ -12,23 +11,13 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function WalletConnectButton() {
-  const { isConnected, address, chainId, connectWallet } = useWallet();
+  const { isConnected, address, connectWallet } = useWallet();
 
   const truncateAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
-  
-  const isCorrectNetwork = chainId === MEGAETH_TESTNET.chainId;
 
   if (isConnected) {
-    if (!isCorrectNetwork) {
-      return (
-        <Button variant="destructive" onClick={connectWallet}>
-          <AlertTriangle className="mr-2 h-4 w-4" />
-          Wrong Network
-        </Button>
-      );
-    }
     return (
       <TooltipProvider>
         <Tooltip>
