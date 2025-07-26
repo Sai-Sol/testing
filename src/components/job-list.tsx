@@ -121,6 +121,16 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
 
   const getJobId = (txHash: string) => `Job #${txHash.slice(0, 6)}...${txHash.slice(-4)}`;
 
+  const getJobTitle = (job: Job) => {
+    if (job.analysis?.title) {
+        return job.analysis.title;
+    }
+    if (job.ipfsHash.length > 50) {
+        return `${job.ipfsHash.substring(0, 50)}...`;
+    }
+    return job.ipfsHash;
+  }
+
   return (
     <Card className="h-full bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/10">
       <CardHeader>
@@ -168,7 +178,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange, 
                       <div className="flex items-center gap-4 flex-1">
                         <div className="p-3 bg-primary/10 rounded-lg text-primary"><Bot size={24}/></div>
                         <div className="flex-1">
-                           <div className="font-semibold text-base text-foreground">{job.analysis?.title || job.ipfsHash}</div>
+                           <div className="font-semibold text-base text-foreground">{getJobTitle(job)}</div>
                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                                 <span className="font-mono">{getJobId(job.txHash)}</span>
                                 <Badge variant="outline" className="text-green-400 border-green-400/50">
