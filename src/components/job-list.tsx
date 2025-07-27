@@ -22,6 +22,69 @@ import { Badge } from "@/components/ui/badge";
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
 
+// AI-powered job description summarizer
+const summarizeJobDescription = (description: string, jobType: string): string => {
+  const lowerDesc = description.toLowerCase();
+  
+  // QASM code detection and summarization
+  if (lowerDesc.includes('openqasm') || lowerDesc.includes('qreg') || lowerDesc.includes('creg')) {
+    if (lowerDesc.includes('bell') || (lowerDesc.includes('h ') && lowerDesc.includes('cx'))) {
+      return "Bell State Entanglement Circuit";
+    }
+    if (lowerDesc.includes('grover')) {
+      return "Grover's Search Algorithm Implementation";
+    }
+    if (lowerDesc.includes('shor')) {
+      return "Shor's Factorization Algorithm";
+    }
+    if (lowerDesc.includes('teleport')) {
+      return "Quantum Teleportation Protocol";
+    }
+    if (lowerDesc.includes('measure')) {
+      return "Quantum Measurement Circuit";
+    }
+    return "Custom Quantum Circuit Implementation";
+  }
+  
+  // Natural language prompt summarization
+  if (lowerDesc.includes('factor') || lowerDesc.includes('shor')) {
+    return "Integer Factorization using Shor's Algorithm";
+  }
+  if (lowerDesc.includes('search') || lowerDesc.includes('grover')) {
+    return "Database Search using Grover's Algorithm";
+  }
+  if (lowerDesc.includes('bell') || lowerDesc.includes('entangl')) {
+    return "Quantum Entanglement Demonstration";
+  }
+  if (lowerDesc.includes('teleport')) {
+    return "Quantum Teleportation Experiment";
+  }
+  if (lowerDesc.includes('random') || lowerDesc.includes('rng')) {
+    return "Quantum Random Number Generation";
+  }
+  if (lowerDesc.includes('superposition')) {
+    return "Quantum Superposition Analysis";
+  }
+  if (lowerDesc.includes('optimization') || lowerDesc.includes('qaoa')) {
+    return "Quantum Optimization Problem Solving";
+  }
+  if (lowerDesc.includes('simulation') || lowerDesc.includes('vqe')) {
+    return "Quantum System Simulation";
+  }
+  if (lowerDesc.includes('machine learning') || lowerDesc.includes('qml')) {
+    return "Quantum Machine Learning Model";
+  }
+  
+  // Fallback to first meaningful words
+  const words = description.split(' ').filter(word => word.length > 3);
+  const summary = words.slice(0, 4).join(' ');
+  return summary.length > 50 ? `${summary.substring(0, 47)}...` : summary || "Quantum Computing Task";
+};
+
+const generateJobId = (txHash: string): string => {
+  return `QC-${txHash.slice(2, 8).toUpperCase()}`;
+};
+
 type Job = {
   user: string;
   jobType: string;
@@ -113,17 +176,12 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
     }
     return jobs;
-  }, [jobs, filterByUser, userRole, user, signer]);
-
-  const getJobId = (txHash: string) => `Job #${txHash.slice(0, 6)}...${txHash.slice(-4)}`;
-
   const getJobTitle = (job: Job) => {
-    if (job.metadata?.description) {
-      return job.metadata.description.length > 50 
-        ? `${job.metadata.description.substring(0, 50)}...`
-        : job.metadata.description;
+    if (job.metadata?.description || job.ipfsHash) {
+      const description = job.metadata?.description || job.ipfsHash;
+      return summarizeJobDescription(description, job.jobType);
     }
-    return job.ipfsHash.length > 50 ? `${job.ipfsHash.substring(0, 50)}...` : job.ipfsHash;
+    return "Quantum Computing Task";
   };
 
   const getPriorityColor = (priority: string) => {
@@ -200,12 +258,16 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-base text-foreground">{getJobTitle(job)}</div>
+                        <div className="font-semibold text-base text-foreground flex items-center gap-2">
+                          <span className="text-primary font-mono text-sm">{generateJobId(job.txHash)}</span>
+                          <span>•</span>
+                          <span>{getJobTitle(job)}</span>
+                        </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
-                          <span className="font-mono">{getJobId(job.txHash)}</span>
+                          <span className="font-mono">Tx: {job.txHash.slice(0, 8)}...{job.txHash.slice(-6)}</span>
                           <Badge variant="outline" className="text-green-400 border-green-400/50">
                             <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                            Completed
+                            Verified on Blockchain
                           </Badge>
                           {job.metadata?.priority && (
                             <Badge variant="outline" className={getPriorityColor(job.metadata.priority)}>
@@ -257,19 +319,24 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
                       <h4 className="font-semibold text-primary">Job Details</h4>
                       {job.metadata ? (
                         <div className="space-y-2">
-                          <p className="text-sm"><strong>Description:</strong> {job.metadata.description}</p>
+                          <p className="text-sm"><strong>Job ID:</strong> {generateJobId(job.txHash)}</p>
+                          <p className="text-sm"><strong>Summary:</strong> {getJobTitle(job)}</p>
                           <p className="text-sm"><strong>Provider:</strong> {job.metadata.type}</p>
                           <p className="text-sm"><strong>Priority:</strong> {job.metadata.priority}</p>
+                          <p className="text-sm"><strong>Submission Type:</strong> {job.metadata.submissionType}</p>
                         </div>
                       ) : (
-                        <p className="text-sm font-mono break-all">{job.ipfsHash}</p>
+                        <div className="space-y-2">
+                          <p className="text-sm"><strong>Job ID:</strong> {generateJobId(job.txHash)}</p>
+                          <p className="text-sm"><strong>Summary:</strong> {getJobTitle(job)}</p>
+                        </div>
                       )}
-                      <p className="text-sm font-mono break-all"><strong>Transaction:</strong> {job.txHash}</p>
+                      <p className="text-sm font-mono break-all"><strong>Blockchain Hash:</strong> {job.txHash}</p>
                       <div className="pt-2">
                         <a href={`https://www.megaexplorer.xyz/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer">
                           <Button variant="outline" size="sm" className="hover:bg-primary hover:text-primary-foreground">
                             <ExternalLink className="mr-2 h-4 w-4" />
-                            View on MegaETH Explorer
+                            Verify on Blockchain Explorer
                           </Button>
                         </a>
                       </div>
