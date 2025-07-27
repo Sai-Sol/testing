@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -36,105 +35,111 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, WandSparkles, Terminal, Bot, BrainCircuit, Lightbulb, BarChart3, Info } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Terminal, Zap, Clock, DollarSign, Activity } from "lucide-react";
 
 import { CONTRACT_ADDRESS } from "@/lib/constants";
 import { quantumJobLoggerABI } from "@/lib/contracts";
-import { analyseQasm, type AnalyseQasmOutput } from "@/ai/flows/analyse-qasm-flow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Badge } from "./ui/badge";
 
 const formSchema = z.object({
   jobType: z.string().min(1, { message: "Job type cannot be empty." }),
-  description: z.string(),
+  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   submissionType: z.enum(["prompt", "qasm"]),
+  priority: z.enum(["low", "medium", "high"]),
+  estimatedCost: z.string().optional(),
 });
 
-const computerTimeFactors: Record<string, { base: number; factor: number }> = {
-  "IBM Quantum": { base: 25, factor: 0.15 },
-  "Google Quantum": { base: 15, factor: 0.1 },
-  "Amazon Braket": { base: 20, factor: 0.2 },
+const computerTimeFactors: Record<string, { base: number; factor: number; cost: number }> = {
+  "IBM Quantum": { base: 25, factor: 0.15, cost: 0.001 },
+  "Google Quantum": { base: 15, factor: 0.1, cost: 0.0015 },
+  "Amazon Braket": { base: 20, factor: 0.2, cost: 0.0012 },
+};
+
+const priorityMultipliers = {
+  low: 1,
+  medium: 1.5,
+  high: 2.5,
 };
 
 interface JobSubmissionFormProps {
-  onJobLogged: (analysis: AnalyseQasmOutput | null) => void;
+  onJobLogged: () => void;
 }
 
 export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalyseQasmOutput | null>(null);
-  const { isConnected, signer } = useWallet();
+  const [gasEstimate, setGasEstimate] = useState<string | null>(null);
+  const { isConnected, signer, provider } = useWallet();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       jobType: "IBM Quantum",
-      description: "factor the largest 8 digit number",
+      description: "",
       submissionType: "prompt",
+      priority: "medium",
+      estimatedCost: "",
     },
   });
 
   const selectedJobType = form.watch("jobType");
   const descriptionValue = form.watch("description");
+  const priority = form.watch("priority");
   
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      form.setValue('description', e.target.value);
-      if (analysisResult) {
-          setAnalysisResult(null); // Reset analysis if user edits description
-      }
-  }
-
-  const estimatedTime = useMemo(() => {
-    if (!selectedJobType || !descriptionValue) return "5 - 10 seconds";
-    const { base, factor } = computerTimeFactors[selectedJobType];
+  const { estimatedTime, estimatedCost } = useMemo(() => {
+    if (!selectedJobType || !descriptionValue) return { estimatedTime: "5 - 10 seconds", estimatedCost: "0.001 ETH" };
+    
+    const { base, factor, cost } = computerTimeFactors[selectedJobType];
     const length = descriptionValue.length;
-    const timeInSeconds = base + length * factor;
+    const baseTime = base + length * factor;
+    const priorityMultiplier = priorityMultipliers[priority];
+    
+    const timeInSeconds = baseTime / priorityMultiplier;
     const highTimeInSeconds = timeInSeconds * 1.5;
+    const totalCost = cost * priorityMultiplier;
 
     const formatDisplayTime = (seconds: number) => {
-      if (seconds < 60) {
-        return `${Math.round(seconds)} sec`;
-      }
+      if (seconds < 60) return `${Math.round(seconds)} sec`;
       return `${(seconds / 60).toFixed(1)} min`;
     };
     
-    if (highTimeInSeconds < 60) {
-       return `${Math.round(timeInSeconds)} - ${Math.round(highTimeInSeconds)} seconds`;
-    }
+    const timeRange = highTimeInSeconds < 60 
+      ? `${Math.round(timeInSeconds)} - ${Math.round(highTimeInSeconds)} seconds`
+      : `${formatDisplayTime(timeInSeconds)} - ${formatDisplayTime(highTimeInSeconds)}`;
+
+    return {
+      estimatedTime: timeRange,
+      estimatedCost: `${totalCost.toFixed(4)} ETH`
+    };
+  }, [selectedJobType, descriptionValue, priority]);
+
+  // Estimate gas cost
+  const estimateGas = async () => {
+    if (!signer || !provider) return;
     
-    return `${formatDisplayTime(timeInSeconds)} - ${formatDisplayTime(highTimeInSeconds)}`;
-
-  }, [selectedJobType, descriptionValue]);
-
-  async function handleAnalyze(values: z.infer<typeof formSchema>) {
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
     try {
-      const result = await analyseQasm({
-        userInput: values.description,
-        submissionType: values.submissionType,
-      });
-      setAnalysisResult(result);
+      const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
+      const gasEstimate = await contract.logJob.estimateGas(
+        form.getValues().jobType,
+        form.getValues().description
+      );
+      const gasPrice = await provider.getFeeData();
+      const totalGasCost = gasEstimate * (gasPrice.gasPrice || BigInt(0));
+      setGasEstimate((Number(totalGasCost) / 1e18).toFixed(6));
     } catch (error) {
-      console.error("AI analysis failed:", error);
-      toast({
-        variant: "destructive",
-        title: "AI Analysis Failed",
-        description: "Could not analyze the submission. Please try again.",
-      });
-    } finally {
-      setIsAnalyzing(false);
+      console.error("Gas estimation failed:", error);
     }
-  }
-  
-  async function handleLogJob() {
-    if (!signer || !analysisResult) {
+  };
+
+  const handleLogJob = async (values: z.infer<typeof formSchema>) => {
+    if (!signer) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Cannot log job. Wallet not connected or analysis not complete.",
+        description: "Wallet not connected. Please connect your wallet first.",
       });
       return;
     }
@@ -143,37 +148,56 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     try {
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, signer);
       
-      const jobType = form.getValues().jobType;
-      const ipfsHash = analysisResult.analysis;
+      // Create a more detailed job description
+      const jobMetadata = {
+        type: values.jobType,
+        description: values.description,
+        submissionType: values.submissionType,
+        priority: values.priority,
+        timestamp: Date.now(),
+        estimatedCost: estimatedCost,
+        estimatedTime: estimatedTime,
+      };
+
+      const jobDescription = JSON.stringify(jobMetadata);
 
       toast({
         title: "Please Confirm in Your Wallet",
-        description: "Confirm the transaction to log your job on the blockchain.",
+        description: "Confirm the transaction to log your quantum job on the blockchain.",
       });
 
-      const tx = await contract.logJob(jobType, ipfsHash);
+      // Estimate gas first
+      await estimateGas();
+
+      const tx = await contract.logJob(values.jobType, jobDescription);
       
+      toast({
+        title: "Transaction Submitted",
+        description: "Your transaction is being processed...",
+      });
+
       await tx.wait();
 
       toast({
-        title: "Transaction Successful!",
-        description: "Your quantum job has been securely logged.",
+        title: "Success! 🎉",
+        description: "Your quantum job has been securely logged on the blockchain.",
         action: (
           <Button asChild variant="link">
             <a href={`https://www.megaexplorer.xyz/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer">
-              View on Explorer
+              View Transaction
             </a>
           </Button>
         ),
       });
 
       form.reset({
-        jobType: form.getValues().jobType,
+        jobType: values.jobType,
         description: "",
-        submissionType: form.getValues().submissionType,
+        submissionType: values.submissionType,
+        priority: "medium",
       });
-      setAnalysisResult(null);
-      onJobLogged(analysisResult);
+      
+      onJobLogged();
       
     } catch (error: any) {
       console.error(error);
@@ -186,147 +210,216 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
     } finally {
       setIsLoading(false);
     }
-  }
-
+  };
 
   return (
-    <Card className="shadow-lg border-primary/20 bg-card/80 backdrop-blur-sm">
-       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleAnalyze)}>
-          <CardHeader>
+    <Card className="shadow-xl border-primary/20 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleLogJob)}>
+          <CardHeader className="pb-4">
             <CardTitle className="font-headline text-2xl flex items-center gap-2">
               <Terminal className="h-6 w-6 text-primary" />
-              Log a New Job
+              Submit Quantum Job
             </CardTitle>
             <CardDescription>
-              Submit your quantum job to a provider. The job will be logged on-chain.
+              Submit your quantum computing job to be executed on leading quantum platforms and logged immutably on the blockchain.
             </CardDescription>
           </CardHeader>
+          
           <CardContent className="space-y-6">
-            <FormField
-              control={form.control}
-              name="jobType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantum Provider</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a provider" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="IBM Quantum">IBM Quantum</SelectItem>
-                      <SelectItem value="Google Quantum">Google Quantum</SelectItem>
-                      <SelectItem value="Amazon Braket">Amazon Braket</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="jobType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Quantum Provider
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-background/50">
+                          <SelectValue placeholder="Select a provider" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="IBM Quantum">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            IBM Quantum
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Google Quantum">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Google Quantum
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Amazon Braket">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            Amazon Braket
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Priority Level
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-background/50">
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="low">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-green-600 border-green-600">Low</Badge>
+                            Standard processing
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-yellow-600 border-yellow-600">Medium</Badge>
+                            Faster processing
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="high">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-red-600 border-red-600">High</Badge>
+                            Priority processing
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Tabs defaultValue="prompt" onValueChange={(value) => form.setValue('submissionType', value as "prompt" | "qasm")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="prompt"><WandSparkles className="mr-2"/>Prompt</TabsTrigger>
-                <TabsTrigger value="qasm"><Bot className="mr-2"/>QASM Code</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+                <TabsTrigger value="prompt" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Natural Language
+                </TabsTrigger>
+                <TabsTrigger value="qasm" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  QASM Code
+                </TabsTrigger>
               </TabsList>
+              
               <TabsContent value="prompt" className="mt-4">
-                 <FormField
+                <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Job Prompt</FormLabel>
+                      <FormLabel>Job Description</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="e.g., 'Factor the number 15 using Shor's algorithm'" className="font-mono" rows={6} {...field} onChange={handleDescriptionChange} />
+                        <Textarea 
+                          placeholder="Describe your quantum computing task (e.g., 'Create a quantum circuit to factor the number 15 using Shor's algorithm')" 
+                          className="font-mono bg-background/50 min-h-[120px]" 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </TabsContent>
+              
               <TabsContent value="qasm" className="mt-4">
-                 <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>QASM Code</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder={'OPENQASM 2.0;\\nqreg q[2];\\ncreg c[2];\\nh q[0];\\ncx q[0],q[1];\\nmeasure q -> c;'} className="font-mono" rows={6} {...field} onChange={handleDescriptionChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>QASM Code</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;'} 
+                          className="font-mono bg-background/50 min-h-[120px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </TabsContent>
             </Tabs>
 
-            <AnimatePresence>
-              {isAnalyzing && (
-                  <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="flex items-center justify-center gap-2 text-muted-foreground p-4 bg-muted/50 rounded-lg"
-                  >
-                      <Loader2 className="animate-spin" />
-                      <p>QuantumAI is analyzing your submission...</p>
-                  </motion.div>
-              )}
-              {analysisResult && (
-                  <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                  >
-                      <Alert>
-                          <BrainCircuit className="h-4 w-4" />
-                          <AlertTitle className="font-headline text-lg">AI Analysis Complete</AlertTitle>
-                          <AlertDescription>
-                              Here's what QuantumAI thinks about your submission.
-                          </AlertDescription>
-                      </Alert>
-                      <div className="grid gap-4 mt-4 text-sm">
-                          <div className="p-4 rounded-lg bg-background border">
-                              <h4 className="font-semibold flex items-center gap-2 mb-2 text-primary"><Info /> Title & Summary</h4>
-                              <p className="font-bold text-lg">{analysisResult.title}</p>
-                              <p className="text-muted-foreground">{analysisResult.analysis}</p>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 rounded-lg bg-background border">
-                                  <h4 className="font-semibold flex items-center gap-2 mb-2"><BarChart3/>Complexity</h4>
-                                  <p className="font-mono text-lg">{analysisResult.complexity}</p>
-                              </div>
-                              <div className="p-4 rounded-lg bg-background border">
-                                  <h4 className="font-semibold flex items-center gap-2 mb-2"><Lightbulb />Optimization</h4>
-                                  <p>{analysisResult.optimizations}</p>
-                              </div>
-                          </div>
-                      </div>
-                  </motion.div>
-              )}
-            </AnimatePresence>
-
-          </CardContent>
-          <CardFooter className="flex-col items-stretch gap-4">
-              <div className="text-sm text-center text-muted-foreground bg-background/50 rounded-lg p-3">
-                Estimated time to completion: <span className="font-medium text-foreground">{estimatedTime}</span>
+            {/* Job Estimates */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Estimated Time</span>
+                </div>
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{estimatedTime}</p>
               </div>
               
-              {!analysisResult ? (
-                 <Button type="submit" disabled={isAnalyzing || !isConnected}>
-                    {isAnalyzing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : "Analyze Job"}
-                 </Button>
-              ) : (
-                <Button onClick={handleLogJob} disabled={isLoading || !isConnected} className="w-full font-semibold bg-green-600 hover:bg-green-700">
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging Job...</> : 
-                  "Log Job"}
-                </Button>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800 dark:text-green-200">Estimated Cost</span>
+                </div>
+                <p className="text-lg font-bold text-green-900 dark:text-green-100">{estimatedCost}</p>
+              </div>
+              
+              {gasEstimate && (
+                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="h-4 w-4 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Gas Cost</span>
+                  </div>
+                  <p className="text-lg font-bold text-purple-900 dark:text-purple-100">{gasEstimate} ETH</p>
+                </div>
               )}
+            </div>
+          </CardContent>
+          
+          <CardFooter className="flex-col items-stretch gap-4 pt-6">
+            <Button 
+              type="submit" 
+              disabled={isLoading || !isConnected} 
+              className="w-full font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+              onClick={() => estimateGas()}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Processing Transaction...
+                </>
+              ) : (
+                <>
+                  <Terminal className="mr-2 h-4 w-4" />
+                  Submit & Log Job
+                </>
+              )}
+            </Button>
 
-              {!isConnected && <p className="text-sm text-center text-yellow-500">Connect your wallet to enable logging.</p>}
+            {!isConnected && (
+              <Alert>
+                <AlertTitle>Wallet Required</AlertTitle>
+                <AlertDescription>
+                  Please connect your MetaMask wallet to submit quantum jobs to the blockchain.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardFooter>
         </form>
       </Form>

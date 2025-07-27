@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import AdminDashboard from "@/components/admin-dashboard";
-import { Bot, Cpu } from "lucide-react";
+import { Atom, Cpu, Zap, Shield, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function DashboardHomePage() {
@@ -20,7 +20,7 @@ export default function DashboardHomePage() {
       >
         <Avatar className="h-20 w-20 border-4 border-primary/50 shadow-lg">
            <AvatarFallback className="bg-primary/20">
-             <Bot size={40} className="text-primary"/>
+             <Atom size={40} className="text-primary"/>
            </AvatarFallback>
         </Avatar>
         <div>
@@ -28,7 +28,7 @@ export default function DashboardHomePage() {
             Welcome back, {user?.name || user?.email}!
           </h1>
           <p className="text-lg text-muted-foreground">
-            I am QuantumAI, your assistant for the QuantumChain platform.
+            Access the world's leading quantum computers through our secure blockchain platform.
           </p>
         </div>
       </motion.div>
@@ -42,7 +42,7 @@ export default function DashboardHomePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">About QuantumChain</CardTitle>
-            <Bot className="h-4 w-4 text-muted-foreground" />
+            <Atom className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Quantum Aggregator</div>
@@ -60,6 +60,19 @@ export default function DashboardHomePage() {
             <div className="text-2xl font-bold">High-Throughput L2</div>
              <p className="text-xs text-muted-foreground">
               MegaETH is a high-performance Layer 2 blockchain designed for scalability and speed, making it ideal for logging quantum jobs immutably.
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Blockchain Security</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Immutable Logs</div>
+            <p className="text-xs text-muted-foreground">
+              Every quantum job is cryptographically secured and permanently recorded on the MegaETH blockchain.
             </p>
           </CardContent>
         </Card>

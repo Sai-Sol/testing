@@ -71,10 +71,14 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <UserPlus className="h-8 w-8 text-primary" />
+            <UserPlus className="h-8 w-8 text-primary animate-pulse" />
           </div>
-          <CardTitle className="text-3xl font-headline">Create an Account</CardTitle>
-          <CardDescription>Join QuantumChain Logger to start logging jobs.</CardDescription>
+          <CardTitle className="text-3xl font-headline bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Join QuantumChain
+          </CardTitle>
+          <CardDescription>
+            Create your account to access quantum computing platforms securely
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

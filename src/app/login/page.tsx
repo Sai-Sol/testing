@@ -109,11 +109,15 @@ export default function LoginPage() {
               transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
             >
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Atom className="h-8 w-8" />
+                <Atom className="h-8 w-8 animate-pulse" />
               </div>
             </motion.div>
-            <CardTitle className="text-3xl font-headline">QuantumChain Logger</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+            <CardTitle className="text-3xl font-headline bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              QuantumChain
+            </CardTitle>
+            <CardDescription>
+              Secure quantum computing platform powered by blockchain technology
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>

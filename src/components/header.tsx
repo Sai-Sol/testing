@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, UserCircle, Bot, Home, PlusSquare, History, FileText } from "lucide-react";
+import { LogOut, UserCircle, Atom, Home, PlusSquare, History, FileText, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import WalletConnectButton from "./wallet-connect-button";
@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWallet } from "@/hooks/use-wallet";
-import { AiChat } from "./ai-chat";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -43,7 +42,7 @@ export default function Header() {
        <div className="flex items-center gap-2">
         <Link href="/dashboard" className="flex items-center gap-2">
             <div className="bg-primary/20 text-primary p-2 rounded-lg">
-            <Bot className="h-6 w-6" />
+            <Atom className="h-6 w-6" />
             </div>
             <span className="font-headline text-lg font-semibold tracking-tight">
             QuantumChain
@@ -62,7 +61,10 @@ export default function Header() {
         </nav>
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
-        <AiChat />
+        <Button variant="outline" size="icon" title="Network Status">
+          <Zap className="h-5 w-5 text-green-500" />
+          <span className="sr-only">Network Status</span>
+        </Button>
         <WalletConnectButton />
         {user && (
           <DropdownMenu>
