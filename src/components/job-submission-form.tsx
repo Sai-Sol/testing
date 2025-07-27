@@ -180,7 +180,7 @@ export default function JobSubmissionForm({ onJobLogged }: JobSubmissionFormProp
 
       toast({
         title: "Success! 🎉",
-        description: "Your quantum job has been securely logged on the blockchain.",
+        description: "Your quantum job has been securely logged on the blockchain with tamper-proof verification.",
         action: (
           <Button asChild variant="link">
             <a href={`https://www.megaexplorer.xyz/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer">

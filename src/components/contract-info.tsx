@@ -26,10 +26,10 @@ export default function ContractInfo() {
       <CardHeader>
         <CardTitle className="font-headline text-xl flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          Contract Information
+          Blockchain Contract Information
         </CardTitle>
         <CardDescription>
-          The smart contract address for all quantum jobs.
+          The immutable smart contract that securely logs all quantum computations on the blockchain.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

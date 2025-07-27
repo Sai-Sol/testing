@@ -61,10 +61,6 @@ export default function Header() {
         </nav>
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
-        <Button variant="outline" size="icon" title="Network Status">
-          <Zap className="h-5 w-5 text-green-500" />
-          <span className="sr-only">Network Status</span>
-        </Button>
         <WalletConnectButton />
         {user && (
           <DropdownMenu>

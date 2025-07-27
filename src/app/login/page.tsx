@@ -116,7 +116,7 @@ export default function LoginPage() {
               QuantumChain
             </CardTitle>
             <CardDescription>
-              Secure quantum computing platform powered by blockchain technology
+              Blockchain-based quantum cloud logging system with tamper-proof verification
             </CardDescription>
           </CardHeader>
           <CardContent>

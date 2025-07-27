@@ -77,7 +77,7 @@ export default function RegisterPage() {
             Join QuantumChain
           </CardTitle>
           <CardDescription>
-            Create your account to access quantum computing platforms securely
+            Create your account to access the secure blockchain-based quantum logging system
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -37,11 +37,6 @@ export default function WalletConnectButton() {
   if (isConnected && address) {
     return (
        <div className="flex items-center gap-2">
-        {!isCorrectNetwork && (
-          <Badge variant="destructive" className="text-xs">
-            Wrong Network
-          </Badge>
-        )}
         {balance && (
           <Badge variant="outline" className="text-sm font-mono bg-green-50 text-green-700 border-green-200">
             {parseFloat(balance).toFixed(4)} ETH
@@ -50,7 +45,7 @@ export default function WalletConnectButton() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:from-green-100 hover:to-green-200">
-              <Wallet className={`mr-2 h-4 w-4 ${isCorrectNetwork ? 'text-green-500' : 'text-red-500'}`} />
+              <Wallet className="mr-2 h-4 w-4 text-green-500" />
               {truncateAddress(address)}
             </Button>
           </DropdownMenuTrigger>

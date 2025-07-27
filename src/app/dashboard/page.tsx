@@ -41,55 +41,60 @@ export default function DashboardHomePage() {
         )}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">About QuantumChain</CardTitle>
+            <CardTitle className="text-sm font-medium">Blockchain Security</CardTitle>
             <Atom className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Quantum Aggregator</div>
+            <div className="text-2xl font-bold">Immutable Logs</div>
             <p className="text-xs text-muted-foreground">
-              QuantumChain is an aggregator of multiple quantum cloud platforms, providing a single interface to access the world's leading quantum computers.
+              Every quantum computation is permanently recorded on the blockchain, ensuring tamper-proof verification and complete audit trails.
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">About MegaETH</CardTitle>
+            <CardTitle className="text-sm font-medium">Quantum Security</CardTitle>
             <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">High-Throughput L2</div>
+            <div className="text-2xl font-bold">Tamper-Proof</div>
              <p className="text-xs text-muted-foreground">
-              MegaETH is a high-performance Layer 2 blockchain designed for scalability and speed, making it ideal for logging quantum jobs immutably.
+              Traditional quantum cloud systems can be tampered with. Our blockchain-based approach ensures computational integrity and prevents unauthorized modifications.
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Blockchain Security</CardTitle>
+            <CardTitle className="text-sm font-medium">Verification System</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Immutable Logs</div>
+            <div className="text-2xl font-bold">User Verification</div>
             <p className="text-xs text-muted-foreground">
-              Every quantum job is cryptographically secured and permanently recorded on the MegaETH blockchain.
+              Users can independently verify that their quantum computations haven't been altered, providing complete transparency and trust in the system.
             </p>
           </CardContent>
         </Card>
         
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Our Partners</CardTitle>
+            <CardTitle>System Architecture</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center justify-center gap-8 py-6">
-            <div className="flex h-16 w-40 items-center justify-center rounded-lg bg-muted p-4 text-center font-medium text-foreground/80">
-              IBM Quantum
-            </div>
-            <div className="flex h-16 w-40 items-center justify-center rounded-lg bg-muted p-4 text-center font-medium text-foreground/80">
-              Google Quantum
-            </div>
-            <div className="flex h-16 w-40 items-center justify-center rounded-lg bg-muted p-4 text-center font-medium text-foreground/80">
-              Amazon Braket
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border border-blue-200 dark:border-blue-800">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">1. Quantum Execution</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Jobs are executed on quantum cloud platforms with real-time monitoring</p>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 border border-green-200 dark:border-green-800">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">2. Blockchain Logging</h3>
+                <p className="text-sm text-green-700 dark:text-green-300">Results are cryptographically hashed and stored on the immutable ledger</p>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border border-purple-200 dark:border-purple-800">
+                <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">3. Verification</h3>
+                <p className="text-sm text-purple-700 dark:text-purple-300">Users can verify computational integrity through blockchain records</p>
+              </div>
             </div>
           </CardContent>
         </Card>

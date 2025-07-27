@@ -67,7 +67,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       const contract = new Contract(CONTRACT_ADDRESS, quantumJobLoggerABI, provider);
       const filter = contract.filters.JobLogged();
       const currentBlock = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, currentBlock - 99999);
+      const fromBlock = Math.max(0, currentBlock - 10000);
 
       const logs = await contract.queryFilter(filter, fromBlock, 'latest');
 
@@ -93,7 +93,7 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       onTotalJobsChange(parsedJobs.length);
     } catch (e: any) {
       console.error("Failed to fetch jobs:", e);
-      setError(`Failed to fetch jobs from the blockchain. Please ensure you are on the correct network and refresh. Error: ${e.message}`);
+      setError(`Failed to fetch jobs from the blockchain. Please refresh and try again. Error: ${e.message}`);
       setJobs([]);
       onTotalJobsChange(0);
     } finally {
