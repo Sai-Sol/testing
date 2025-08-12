@@ -176,6 +176,8 @@ export default function JobList({ userRole, jobsLastUpdated, onTotalJobsChange }
       return jobs.filter(job => job.user.toLowerCase() === signer.address.toLowerCase());
     }
     return jobs;
+  }, [jobs, userRole, filterByUser, user, signer]);
+
   const getJobTitle = (job: Job) => {
     if (job.metadata?.description || job.ipfsHash) {
       const description = job.metadata?.description || job.ipfsHash;
